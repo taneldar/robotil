@@ -218,6 +218,139 @@
   #zoom #zoomVal { width: 58px; font-family: var(--font-num); font-size: 13px; }
   #zoom button:hover:not(:disabled) { background: var(--bg); }
 
+  #projName {
+    width: 200px;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+  }
+  #projName:hover { border-color: var(--muted); }
+
+  /* ---------- Басты бет ---------- */
+  #home {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    overflow-y: auto;
+    background-color: var(--plate);
+    background-image:
+      radial-gradient(circle at 50% 44%, var(--stud-hi) 0 27%, transparent 29%),
+      radial-gradient(circle at 50% 56%, var(--stud-lo) 0 29%, transparent 31%);
+    background-size: 24px 24px;
+  }
+  #home[hidden] { display: none; }
+  #home.dropping { outline: 4px dashed #0055bf; outline-offset: -12px; }
+  .home-wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: grid;
+    gap: 28px;
+    padding-block: 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .home-head { display: flex; align-items: center; gap: 20px; }
+  .home-head h1 { margin: 0; font-size: 44px; font-weight: 700; line-height: 1; }
+  .home-head p { margin: 6px 0 0; font-size: 17px; color: var(--muted); }
+  .home-brick {
+    flex: none;
+    width: 72px; height: 52px;
+    margin-top: 10px;
+    border-radius: 6px;
+    position: relative;
+    background: #fe8a18;
+    box-shadow: 0 6px 0 #c4600a;
+  }
+  .home-brick::before, .home-brick::after {
+    content: '';
+    position: absolute;
+    top: -9px;
+    width: 20px; height: 9px;
+    border-radius: 3px 3px 0 0;
+    background: #fe8a18;
+  }
+  .home-brick::before { left: 10px; }
+  .home-brick::after { right: 10px; }
+  .home-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .tile {
+    --c: #fe8a18; --d: #c4600a; --ink: #2b1700;
+    display: grid;
+    gap: 4px;
+    align-content: start;
+    min-height: 120px;
+    padding: 20px;
+    border: none;
+    border-radius: 14px;
+    background: var(--c);
+    color: var(--ink);
+    text-align: left;
+    box-shadow: 0 6px 0 var(--d);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .tile:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--d); }
+  .tile b { font-size: 22px; font-weight: 700; }
+  .tile span { font-size: 14px; opacity: .85; }
+  .tile-open { --c: #0055bf; --d: #003c88; --ink: #fff; }
+  .tile-example { --c: #008f9b; --d: #00656e; --ink: #fff; }
+  .home-list { display: grid; gap: 14px; }
+  .home-list h2 { margin: 0; font-size: 20px; font-weight: 700; }
+  .home-empty { margin: 0; padding: 20px; border: 2px dashed var(--line); border-radius: 12px; background: var(--surface); color: var(--muted); }
+  #homeList { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+  .proj {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .proj-open {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+    padding: 16px 16px 12px;
+    border: none;
+    background: none;
+    text-align: left;
+  }
+  .proj-open:hover { background: var(--bg); }
+  .proj-strip { display: flex; gap: 3px; height: 18px; margin-bottom: 6px; }
+  .proj-strip i { width: 20px; border-radius: 3px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.2); }
+  .proj-name { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .proj-meta { font-size: 13px; color: var(--muted); }
+  .proj-actions { display: flex; border-top: 1px solid var(--line); }
+  .proj-actions button {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    height: 40px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .proj-actions button + button { border-left: 1px solid var(--line); }
+  .proj-actions button:hover { background: var(--bg); }
+  .proj-actions .del { color: var(--err); }
+  .home-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+  .home-wrap > *, .home-head > div { min-width: 0; }
+  @media (max-width: 720px) {
+    .home-tiles { grid-template-columns: 1fr; }
+    .tile { min-height: 0; }
+  }
+  @media (max-width: 480px) {
+    .home-wrap { padding-block: 28px; }
+    .home-brick { width: 48px; height: 34px; }
+    .home-brick::before, .home-brick::after { width: 13px; height: 6px; top: -6px; }
+    .home-head h1 { font-size: 34px; }
+    .home-head p { font-size: 15px; }
+    #homeList { grid-template-columns: 1fr; }
+  }
+
   #btnAI { --c: #008f9b; --d: #00656e; --ink: #fff; }
   #btnAI[aria-pressed="true"] { --c: #00656e; --d: #004a51; }
 
@@ -472,6 +605,10 @@
   #trash svg { width: 28px; height: 28px; fill: #fff; }
   #tray.trash #trash { display: flex; }
 
+  @media (max-width: 1300px) {
+    .logo { display: none; }
+    #projName { width: 150px; }
+  }
   @media (max-width: 1100px) {
     .logo-text { display: none; }
     .meter { display: none; }
@@ -489,11 +626,39 @@
 </head>
 <body>
 
+<!-- Басты бет: жаңа жоба, файлдан ашу, мысал және соңғы жобалар -->
+<section id="home" aria-label="Жобалар">
+  <div class="home-wrap">
+    <header class="home-head">
+      <div class="home-brick"></div>
+      <div>
+        <h1>RoboTil</h1>
+        <p>LEGO роботтарына арналған қазақ тіліндегі AI-робототехника студиясы</p>
+      </div>
+    </header>
+    <div class="home-tiles">
+      <button class="tile tile-new" id="homeNew"><b>Жаңа жоба</b><span>Бос алаңнан бастау</span></button>
+      <button class="tile tile-open" id="homeOpen"><b>Файлдан ашу</b><span>Компьютердегі .robotil.json жоба файлы</span></button>
+      <button class="tile tile-example" id="homeExample"><b>Майло мысалы</b><span>Дайын бағдарлама және AI тізбегі</span></button>
+    </div>
+    <section class="home-list">
+      <h2>Менің жобаларым</h2>
+      <p id="homeEmpty" class="home-empty">Әзірге жоба жоқ. «Жаңа жоба» батырмасын бас немесе жоба файлын осы бетке сүйреп әкел.</p>
+      <div id="homeList"></div>
+    </section>
+    <p class="home-note">Жобалар осы браузерде сақталады. Басқа компьютерде ашу немесе мұғалімге жіберу үшін жобаны «Жүктеп алу» батырмасымен файл етіп сақта.</p>
+    <p class="home-note">LEGO®, WeDo және SPIKE — LEGO Group сауда белгілері. RoboTil — LEGO Group-пен байланысы жоқ тәуелсіз жоба.</p>
+  </div>
+  <input type="file" id="fileInput" accept=".json,.robotil,application/json" hidden>
+</section>
+
 <header class="menu">
+  <button id="btnHome" class="btn icon-only" title="Жобалар" aria-label="Жобалар"></button>
   <div class="logo">
     <div class="logo-brick"></div>
     <div class="logo-text"><b>RoboTil</b><span>WeDo 2.0 үшін AI-студия</span></div>
   </div>
+  <input id="projName" maxlength="40" aria-label="Жоба аты" title="Жоба аты">
   <button id="btnConnect" class="btn"></button>
   <div class="chip" id="status"><span class="dot"></span><span id="statusText">Қосылмаған</span></div>
   <div class="spacer"></div>
@@ -504,6 +669,7 @@
   <button id="btnAI" class="btn" aria-pressed="false" aria-controls="aiPanel"></button>
   <button id="btnRun" class="btn"></button>
   <button id="btnStop" class="btn"></button>
+  <button id="btnDownload" class="btn icon-only" title="Жобаны файл етіп жүктеп алу" aria-label="Жобаны жүктеп алу"></button>
   <button id="btnClear" class="btn icon-only" title="Алаңды тазалау" aria-label="Алаңды тазалау"></button>
 </header>
 
@@ -607,6 +773,8 @@ const ICON_PATHS = {
   close: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
   trash: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
   plug:  'M16 7V3h-2v4h-4V3H8v4c-1.1 0-2 .9-2 2v5.5L9.5 18v3h5v-3l3.5-3.5V9c0-1.1-.9-2-2-2z',
+  home:  'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+  down:  'M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z',
   mic:   'M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z',
   micOff:'M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3 3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z',
   spark: 'M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z',
@@ -661,17 +829,21 @@ const palette = $('palette');
 const tray = $('tray');
 
 // Алаңда бірнеше тізбек болады: { x, y, blocks: [...] }. «Қайтала» блогының ішінде body: [...] болады.
-const STORAGE_KEY = 'wedo2-board-v2';
-const DEFAULT_CHAINS = [{
-  x: 40, y: 60,
-  blocks: [
+// Басты беттегі «Майло мысалы»: бастау тізбегі және қол бұлғағанда жүретін AI тізбегі
+const EXAMPLE_CHAINS = [
+  { x: 40, y: 60, blocks: [
     { type: 'start' }, { type: 'light', v: 3 },
     { type: 'repeat', v: 2, body: [{ type: 'fwd' }, { type: 'wait', v: 1 }, { type: 'back' }, { type: 'wait', v: 1 }] },
     { type: 'stop' }, { type: 'sound', v: 8 },
-  ],
-}];
-let chains = loadChains();
-let activeChain = chains[0] || null; // сөредегі блокты басқанда осы тізбектің соңына қосылады
+  ] },
+  { x: 40, y: 330, blocks: [
+    { type: 'aiStart', m: 'Қол белгілері', v: 'Қол бұлғау' }, { type: 'light', v: 3 },
+    { type: 'fwd' }, { type: 'wait', v: 2 }, { type: 'stop' },
+  ] },
+];
+const emptyChains = () => [{ x: 40, y: 60, blocks: [{ type: 'start' }] }];
+let chains = emptyChains();
+let activeChain = chains[0]; // сөредегі блокты басқанда осы тізбектің соңына қосылады
 
 function newBlock(type) {
   const p = BLOCKS[type].param;
@@ -690,17 +862,12 @@ function validList(list, top) {
   return Array.isArray(list) && list.every((b, i) =>
     BLOCKS[b?.type] && (!isHat(b) || (top && i === 0)) && (!isFrame(b) || validList(b.body, false)));
 }
-function loadChains() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (Array.isArray(saved) && saved.every(c =>
-      Number.isFinite(c?.x) && Number.isFinite(c?.y) && c.blocks?.length > 0 && validList(c.blocks, true))) return saved;
-  } catch (e) {}
-  return JSON.parse(JSON.stringify(DEFAULT_CHAINS));
+function validChains(c) {
+  return Array.isArray(c) && c.every(ch =>
+    Number.isFinite(ch?.x) && Number.isFinite(ch?.y) && ch.blocks?.length > 0 && validList(ch.blocks, true));
 }
-function saveProgram() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(chains)); } catch (e) {}
-}
+// Алаң ағымдағы жобаға сақталады (төмендегі «Жобалар» бөлімі)
+function saveProgram() { saveProject(); }
 
 // Жаңа тізбекке бос орын: бар тізбектердің астына
 function freeSpot() {
@@ -1635,7 +1802,6 @@ window.addEventListener('keydown', e => {
 // Модель — бір тапсырма, мысалы «Қол белгілері» немесе «Жер беті»: өз датчигі және өз қимылдары/заттары бар.
 // Әр 50 мс сайын датчиктер жазылады; соңғы 2 секунд (40 өлшем) — бір мысал.
 // Тану: жақын көршілер әдісі (k-NN, k = 3).
-const AI_KEY = 'wedo2-ai-v2';
 const AI_WIN = 40, AI_TICK = 50, AI_REC_MS = 2000, AI_MAX_DIST = 3;
 // өлшемдегі арналар: 0 — қашықтық, 1 — еңіс X, 2 — еңіс Y, 3 — дауыс деңгейі, 4–9 — дыбыстың 6 жиілік жолағы
 const AI_SENSORS = {
@@ -1644,7 +1810,7 @@ const AI_SENSORS = {
   mic:      { name: 'Дыбыс', ch: [3, 4, 5, 6, 7, 8, 9] },
   both:     { name: 'Екеуі', ch: [0, 1, 2] },
 };
-let ai = loadAI();
+let ai = defaultAI(); // ағымдағы жобаның AI модельдері
 const aiBuf = [];
 let aiRec = null;          // { model, cls, t0, done } — жазып жатқан мысал
 const aiLive = new Map();  // модель → { now, conf, streak, stable }
@@ -1662,21 +1828,15 @@ function defaultAI() {
     ],
   };
 }
-function loadAI() {
-  try {
-    const s = JSON.parse(localStorage.getItem(AI_KEY));
-    if (Array.isArray(s?.models) && s.models.length > 0 && s.models.every(m =>
-      typeof m.name === 'string' && AI_SENSORS[m.sensor] && Array.isArray(m.classes) &&
-      m.classes.every(c => typeof c.name === 'string' && Array.isArray(c.samples)))) {
-      s.active = Math.min(Math.max(0, s.active | 0), s.models.length - 1);
-      return s;
-    }
-  } catch (e) {}
-  return defaultAI();
+function validAI(s) {
+  const ok = Array.isArray(s?.models) && s.models.length > 0 && s.models.every(m =>
+    typeof m.name === 'string' && AI_SENSORS[m.sensor] && Array.isArray(m.classes) &&
+    m.classes.every(c => typeof c.name === 'string' && Array.isArray(c.samples)));
+  if (ok) s.active = Math.min(Math.max(0, s.active | 0), s.models.length - 1);
+  return ok;
 }
-function saveAI() {
-  try { localStorage.setItem(AI_KEY, JSON.stringify(ai)); } catch (e) {}
-}
+// AI модельдері де ағымдағы жобаға сақталады
+function saveAI() { saveProject(); }
 const findModel = name => ai.models.find(m => m.name === name);
 const activeModel = () => ai.models[ai.active];
 function liveOf(m) {
@@ -1917,6 +2077,206 @@ function toggleAI(open) {
   if (open) renderAIList();
 }
 
+// ===== Жобалар: басты бет, браузерге сақтау, файлға жүктеп алу =====
+// Жоба = { id, name, created, updated, chains, ai } — алаң да, үйретілген AI да бірге сақталады
+const PROJECTS_KEY = 'robotil-projects';
+const FILE_FORMAT = 'robotil';
+let projects = [];
+let current = null;
+
+const clone = o => JSON.parse(JSON.stringify(o));
+function makeProject(name, ch, aiData) {
+  const now = Date.now();
+  return { id: now.toString(36) + Math.random().toString(36).slice(2, 7), name, created: now, updated: now, chains: ch, ai: aiData };
+}
+
+function loadProjects() {
+  try {
+    const s = JSON.parse(localStorage.getItem(PROJECTS_KEY));
+    if (Array.isArray(s)) return s.filter(p => typeof p?.id === 'string' && typeof p.name === 'string' && validChains(p.chains));
+  } catch (e) {}
+  // бұрынғы нұсқадан көшіру: жалғыз алаң мен оның AI-ы «Менің жобам» болады
+  try {
+    const oldChains = JSON.parse(localStorage.getItem('wedo2-board-v2'));
+    const oldAI = JSON.parse(localStorage.getItem('wedo2-ai-v2'));
+    if (validChains(oldChains) && oldChains.length) return [makeProject('Менің жобам', oldChains, validAI(oldAI) ? oldAI : defaultAI())];
+  } catch (e) {}
+  return [];
+}
+
+let storageWarned = false;
+function persist() {
+  try {
+    localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+  } catch (e) {
+    if (!storageWarned) {
+      storageWarned = true;
+      showError('Браузер жадына сақталмады. Жобаны «Жүктеп алу» батырмасымен файлға сақта.');
+    }
+  }
+}
+function saveProject() {
+  if (!current) return;
+  current.chains = chains;
+  current.ai = ai;
+  current.updated = Date.now();
+  persist();
+}
+
+function openProject(p) {
+  stopAll();
+  current = p;
+  chains = validChains(p.chains) ? p.chains : emptyChains();
+  ai = validAI(p.ai) ? p.ai : defaultAI();
+  p.chains = chains;
+  p.ai = ai;
+  activeChain = chains[0] || null;
+  aiLive.clear();
+  $('screen').hidden = true;
+  $('projName').value = p.name;
+  document.title = `${p.name} — RoboTil`;
+  canvas.scrollTo(0, 0);
+  showHome(false);
+  render();
+  renderAIList();
+  persist();
+}
+
+function createProject(name, ch, aiData) {
+  const p = makeProject(name, ch, aiData);
+  projects.push(p);
+  openProject(p);
+  return p;
+}
+
+// Файл атына жарамсыз таңбаларды алып тастаймыз
+const fileName = name => (name.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'robotil') + '.robotil.json';
+function downloadProject(p) {
+  if (p === current) saveProject();
+  const data = { format: FILE_FORMAT, version: 1, name: p.name, created: p.created, updated: p.updated, chains: p.chains, ai: p.ai };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName(p.name);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function importFile(file) {
+  try {
+    const d = JSON.parse(await file.text());
+    if (d?.format !== FILE_FORMAT || !validChains(d.chains)) throw new Error('format');
+    const name = typeof d.name === 'string' && d.name.trim() ? d.name.trim().slice(0, 40) : file.name.replace(/(\.robotil)?\.json$/i, '');
+    createProject(name, d.chains, validAI(d.ai) ? d.ai : defaultAI());
+  } catch (e) {
+    alert(`«${file.name}» — RoboTil жобасының файлы емес немесе бүлінген. Жүктеп алу батырмасымен сақталған .robotil.json файлын таңда.`);
+  }
+}
+
+function showHome(open) {
+  $('home').hidden = !open;
+  if (open) {
+    stopAll();
+    saveProject();
+    renderHome();
+  }
+}
+
+const blockCount = list => list.reduce((n, b) => n + 1 + (isFrame(b) ? blockCount(b.body) : 0), 0);
+const CAT_COLORS = { motor: '#0055bf', sensor: '#c91a09', light: '#7b3fa0', media: '#237841', flow: '#f8bb3d', ai: '#008f9b' };
+// браузерлердің бәрінде қазақша ай атаулары жоқ, сондықтан өзіміз жазамыз
+const MONTHS = ['қаңтар', 'ақпан', 'наурыз', 'сәуір', 'мамыр', 'маусым', 'шілде', 'тамыз', 'қыркүйек', 'қазан', 'қараша', 'желтоқсан'];
+function fmtDate(t) {
+  const d = new Date(t);
+  const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}, ${hm}`;
+}
+
+function renderHome() {
+  const list = $('homeList');
+  list.innerHTML = '';
+  const sorted = [...projects].sort((a, b) => b.updated - a.updated);
+  $('homeEmpty').hidden = sorted.length > 0;
+  sorted.forEach(p => {
+    const card = document.createElement('article');
+    card.className = 'proj';
+    const open = document.createElement('button');
+    open.className = 'proj-open';
+    open.title = 'Ашу';
+    // бірінші тізбектің блоктары кішкентай кірпіш болып көрінеді
+    const strip = document.createElement('div');
+    strip.className = 'proj-strip';
+    (p.chains[0]?.blocks ?? []).slice(0, 9).forEach(b => {
+      const i = document.createElement('i');
+      i.style.background = isHat(b) && b.type !== 'aiStart' ? '#fe8a18' : CAT_COLORS[BLOCKS[b.type].cat];
+      strip.appendChild(i);
+    });
+    const name = document.createElement('div');
+    name.className = 'proj-name';
+    name.textContent = p.name;
+    const n = p.chains.reduce((s, ch) => s + blockCount(ch.blocks), 0);
+    const trained = (p.ai?.models ?? []).reduce((s, m) => s + m.classes.reduce((t, c) => t + c.samples.length, 0), 0);
+    const meta = document.createElement('div');
+    meta.className = 'proj-meta';
+    meta.textContent = `${n} блок${trained ? ` · AI: ${trained} мысал` : ''} · ${fmtDate(p.updated)}`;
+    open.append(strip, name, meta);
+    open.addEventListener('click', () => openProject(p));
+    const actions = document.createElement('div');
+    actions.className = 'proj-actions';
+    const dl = document.createElement('button');
+    dl.innerHTML = icon('down') + '<span>Жүктеп алу</span>';
+    dl.addEventListener('click', () => downloadProject(p));
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.innerHTML = icon('trash') + '<span>Өшіру</span>';
+    del.addEventListener('click', () => {
+      if (!confirm(`«${p.name}» жобасы өшеді. Керек болса, алдымен «Жүктеп алу» арқылы сақтап ал. Өшіреміз бе?`)) return;
+      projects.splice(projects.indexOf(p), 1);
+      if (current === p) current = null;
+      persist();
+      renderHome();
+    });
+    actions.append(dl, del);
+    card.append(open, actions);
+    list.appendChild(card);
+  });
+}
+
+$('homeNew').addEventListener('click', () => {
+  createProject(uniqueName('Жаңа жоба', projects.map(p => p.name)), emptyChains(), defaultAI());
+  $('projName').focus();
+  $('projName').select();
+});
+$('homeExample').addEventListener('click', () => createProject('Майло: мысал', clone(EXAMPLE_CHAINS), defaultAI()));
+$('homeOpen').addEventListener('click', () => $('fileInput').click());
+$('fileInput').addEventListener('change', e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (f) importFile(f);
+});
+// жоба файлын басты бетке сүйреп әкелуге болады
+$('home').addEventListener('dragover', e => { e.preventDefault(); $('home').classList.add('dropping'); });
+$('home').addEventListener('dragleave', e => { if (e.target === $('home')) $('home').classList.remove('dropping'); });
+$('home').addEventListener('drop', e => {
+  e.preventDefault();
+  $('home').classList.remove('dropping');
+  const f = e.dataTransfer.files[0];
+  if (f) importFile(f);
+});
+$('projName').addEventListener('change', () => {
+  if (!current) return;
+  current.name = $('projName').value.trim().slice(0, 40) || current.name;
+  $('projName').value = current.name;
+  document.title = `${current.name} — RoboTil`;
+  saveProject();
+});
+$('btnHome').innerHTML = icon('home');
+$('btnHome').addEventListener('click', () => showHome(true));
+$('btnDownload').innerHTML = icon('down');
+$('btnDownload').addEventListener('click', () => current && downloadProject(current));
+
 // ===== Батырмалар =====
 $('btnAI').innerHTML = icon('spark') + '<span class="txt">AI үйрету</span>';
 $('btnAI').title = 'AI үйрету';
@@ -2013,6 +2373,10 @@ canvas.addEventListener('wheel', e => {
 
 renderPalette();
 setZoom(zoom);
+// Ашылғанда — басты бет
+projects = loadProjects();
+persist();
+showHome(true);
 if (!navigator.bluetooth) {
   showError('Бұл браузер Web Bluetooth қолдамайды. Chrome немесе Edge ашыңыз.');
   $('btnConnect').disabled = true;
