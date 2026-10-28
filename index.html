@@ -1,0 +1,2022 @@
+<!doctype html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoboTil — AI-робототехника студиясы</title>
+<meta name="description" content="LEGO WeDo 2.0 роботтарына арналған қазақ тіліндегі блоктық бағдарламалау және AI студиясы. Браузерде, интернетсіз AI.">
+<!-- LEGO, WeDo және SPIKE — LEGO Group компаниясының сауда белгілері. RoboTil — LEGO Group-пен байланысы жоқ тәуелсіз жоба. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  /* Орналасу: жоғарыда құрал тақтасы, ортада LEGO негіз тақтасы (алаң), төменде блоктар сөресі */
+  :root {
+    --bg: #eef0eb;
+    --surface: #ffffff;
+    --line: #d7dbd2;
+    --text: #1f2421;
+    --muted: #666e68;
+    --plate: #dde2d8;
+    --stud-hi: #eaede6;
+    --stud-lo: #c6ccc0;
+    --run: #1f2421;
+    --ok: #237841;
+    --warn: #c98a00;
+    --err: #c91a09;
+    --font-ui: "Rubik", "Segoe UI", system-ui, sans-serif;
+    --font-num: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #181b19; --surface: #222624; --line: #353b37; --text: #eceee9; --muted: #9aa29c;
+      --plate: #2a2f2c; --stud-hi: #343a36; --stud-lo: #1f2321; --run: #ffffff;
+      --ok: #4fae5e; --warn: #f2b632; --err: #ff6a55;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #181b19; --surface: #222624; --line: #353b37; --text: #eceee9; --muted: #9aa29c;
+    --plate: #2a2f2c; --stud-hi: #343a36; --stud-lo: #1f2321; --run: #ffffff;
+    --ok: #4fae5e; --warn: #f2b632; --err: #ff6a55;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-ui);
+    font-size: 15px;
+    color: var(--text);
+    background: var(--bg);
+    overflow: hidden;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  :focus-visible { outline: 3px solid #0055bf; outline-offset: 2px; }
+  svg.ic { width: 20px; height: 20px; fill: currentColor; flex: none; }
+
+  /* ---------- Құрал тақтасы ---------- */
+  .menu {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-block: 8px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    position: relative;
+    z-index: 3;
+  }
+  .menu > :not(#status):not(.spacer) { flex: none; }
+  .logo { display: flex; align-items: center; gap: 10px; margin-right: 8px; }
+  .logo-brick {
+    width: 34px; height: 24px;
+    margin-top: 6px;
+    border-radius: 4px;
+    position: relative;
+    background: #fe8a18;
+    box-shadow: 0 4px 0 #c4600a;
+  }
+  .logo-brick::before, .logo-brick::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    width: 10px; height: 5px;
+    border-radius: 2px 2px 0 0;
+    background: #fe8a18;
+    box-shadow: inset 0 -1px 0 #c4600a;
+  }
+  .logo-brick::before { left: 5px; }
+  .logo-brick::after { right: 5px; }
+  .logo-text { line-height: 1.1; }
+  .logo-text b { display: block; font-size: 17px; font-weight: 700; }
+  .logo-text span { font-size: 12px; color: var(--muted); }
+
+  .btn {
+    --c: var(--surface); --d: var(--line); --ink: var(--text);
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: 42px;
+    padding: 0 14px;
+    border: 1px solid var(--d);
+    border-bottom-width: 3px;
+    border-radius: 10px;
+    background: var(--c);
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .btn:active:not(:disabled) { transform: translateY(2px); border-bottom-width: 1px; margin-bottom: 2px; }
+  .btn.icon-only { padding: 0 10px; }
+  #btnConnect { --c: #0055bf; --d: #003c88; --ink: #fff; }
+  #btnConnect.on { --c: var(--surface); --d: var(--line); --ink: var(--text); }
+  #btnRun { --c: #237841; --d: #17552d; --ink: #fff; }
+  #btnStop { --c: #c91a09; --d: #8e1205; --ink: #fff; }
+
+  .chip {
+    display: flex; align-items: center; gap: 6px;
+    min-height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--bg);
+    font-size: 13px;
+    color: var(--text);
+  }
+  .chip svg.ic { width: 16px; height: 16px; color: var(--muted); }
+  .chip b { font-family: var(--font-num); font-weight: 600; font-variant-numeric: tabular-nums; }
+  #status { flex: 0 1 auto; min-width: 0; max-width: 440px; }
+  #statusText { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #status .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--muted); }
+  #status.ok .dot { background: var(--ok); }
+  #status.busy .dot { background: var(--warn); animation: pulse 1s infinite; }
+  #status.err { color: var(--err); }
+  #status.err .dot { background: var(--err); }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .meter { width: 48px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .meter span { display: block; height: 100%; width: 0; background: var(--text); transition: width .15s; }
+  .spacer { flex: 1; }
+
+  /* ---------- Алаң: LEGO негіз тақтасы ---------- */
+  #stage { flex: 1; min-height: 0; position: relative; }
+  #canvas {
+    position: absolute;
+    inset: 0;
+    overflow: auto;
+    background-color: var(--plate);
+    cursor: grab;
+  }
+  #canvas.panning { cursor: grabbing; }
+  /* дөңестер масштабпен бірге өзгереді: background-size JS-тен беріледі */
+  #sizer {
+    position: relative;
+    background-image:
+      radial-gradient(circle at 50% 44%, var(--stud-hi) 0 27%, transparent 29%),
+      radial-gradient(circle at 50% 56%, var(--stud-lo) 0 29%, transparent 31%);
+    background-size: 24px 24px;
+  }
+  #board {
+    position: absolute;
+    left: 0; top: 0;
+    transform-origin: 0 0;
+    /* көлеңке бүкіл алаңға ортақ — жалғанған блоктар біртұтас кесек болып көрінеді */
+    filter: drop-shadow(0 4px 3px rgba(0,0,0,.16));
+  }
+  .block.on-board { position: absolute; margin: 0; }
+  .layer { position: absolute; left: 0; top: 0; }
+  /* блоктың бүйір қалыңдығы — беттерден төмен жеке қабатта */
+  .side { position: absolute; pointer-events: none; }
+  .side > svg.shape { display: block; overflow: visible; }
+  #legal {
+    position: absolute;
+    left: max(14px, env(safe-area-inset-left, 0px));
+    bottom: 10px;
+    z-index: 1;
+    max-width: calc(100% - 220px);
+    margin: 0;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+  @media (max-width: 700px) { #legal { display: none; } }
+  #hint {
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    padding-inline: 16px;
+    text-align: center;
+    font-size: 18px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  #zoom {
+    position: absolute;
+    right: max(14px, env(safe-area-inset-right, 0px));
+    bottom: 14px;
+    z-index: 2;
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  #zoom button {
+    width: 40px; height: 38px;
+    border: none;
+    background: none;
+    font-size: 20px;
+    font-weight: 500;
+  }
+  #zoom button + button { border-left: 1px solid var(--line); }
+  #zoom #zoomVal { width: 58px; font-family: var(--font-num); font-size: 13px; }
+  #zoom button:hover:not(:disabled) { background: var(--bg); }
+
+  #btnAI { --c: #008f9b; --d: #00656e; --ink: #fff; }
+  #btnAI[aria-pressed="true"] { --c: #00656e; --d: #004a51; }
+
+  /* ---------- AI үйрету терезесі ---------- */
+  #aiPanel {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    z-index: 4;
+    width: min(330px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px 16px;
+    overflow-y: auto;
+    background: var(--surface);
+    border-left: 1px solid var(--line);
+    box-shadow: -8px 0 24px rgba(0,0,0,.08);
+  }
+  #aiPanel[hidden] { display: none; }
+  .ai-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .ai-head b { font-size: 18px; font-weight: 700; }
+  .ai-help { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
+  .ai-live {
+    display: grid;
+    gap: 2px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--bg);
+  }
+  .ai-live span { font-size: 12px; color: var(--muted); }
+  .ai-live b { font-size: 24px; font-weight: 700; }
+  .ai-live b.idle { color: var(--muted); }
+  .ai-model { display: grid; gap: 6px; }
+  .ai-model label, .ai-label { font-size: 12px; color: var(--muted); }
+  .ai-model-row { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; }
+  .ai-model select, .ai-model input {
+    min-width: 0;
+    height: 38px;
+    padding: 0 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+  }
+  .ai-model .btn { min-height: 38px; }
+  /* микрофон: басып қосу/өшіру, қосулы кезде дауыс деңгейі 0–10 */
+  #btnMic { border: none; cursor: pointer; }
+  #btnMic[aria-pressed="true"] svg.ic { color: #008f9b; }
+  #btnMic .lvl { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
+  #btnMic .lvl i { width: 3px; border-radius: 1px; background: var(--line); }
+  #btnMic .lvl i.on { background: #008f9b; }
+  .ai-seg { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .ai-seg button { height: 36px; border: none; background: var(--surface); font-size: 13px; font-weight: 600; }
+  .ai-seg button + button { border-left: 1px solid var(--line); }
+  .ai-seg button[aria-pressed="true"] { background: #008f9b; color: #fff; }
+  .ai-note { font-size: 13px; padding: 8px 10px; border-radius: 8px; background: var(--bg); }
+  .ai-note.warn { color: var(--err); }
+  #aiList { display: grid; gap: 8px; }
+  .ai-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .ai-row.hit { border-color: #008f9b; box-shadow: inset 4px 0 0 #008f9b; }
+  .ai-row input {
+    min-width: 0;
+    height: 34px;
+    padding: 0 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+  }
+  .ai-row .count { grid-column: 1 / -1; font-size: 12px; color: var(--muted); font-family: var(--font-num); }
+  .ai-row .btn { min-height: 34px; }
+  .ai-rec { --c: #c91a09; --d: #8e1205; --ink: #fff; }
+  .ai-progress { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .ai-progress span { display: block; height: 100%; width: 0; background: #c91a09; }
+
+  /* «Экран» блогы мәтінді осында шығарады — планшет экраны сияқты */
+  #screen {
+    position: absolute;
+    top: 14px;
+    right: max(14px, env(safe-area-inset-right, 0px));
+    z-index: 2;
+    min-width: 160px;
+    max-width: 40%;
+    padding: 8px 16px 12px;
+    border-radius: 12px;
+    border: 6px solid #2c312e;
+    background: #121513;
+    color: #f4f6f2;
+    text-align: center;
+    pointer-events: none;
+  }
+  #screen .cap { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #8d958f; }
+  #screenText { font-size: 28px; font-weight: 700; word-break: break-word; }
+
+  /* ---------- Блоктар: тегіс LEGO кірпіштері ---------- */
+  /* Пішіні SVG-мен салынады: оң жақта томпақ құлақша, сол жақта ойық */
+  .block {
+    --c: #0055bf; --d: #003c88; --ink: #fff;
+    width: 96px;
+    height: 104px;      /* 96 бет + 8 қалыңдық */
+    padding-bottom: 8px;
+    margin-top: 10px;   /* дөңестерге орын */
+    flex: none;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    cursor: grab;
+  }
+  .block > * { position: relative; }
+  .block > svg.shape { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  .shape .depth { fill: var(--d); }
+  .shape .face { fill: var(--c); stroke: rgba(0,0,0,.2); stroke-width: 1; }
+  .block .studs {
+    position: absolute;
+    top: -7px; left: 0; width: 96px;
+    display: flex; justify-content: center; gap: 22px;
+    pointer-events: none;
+  }
+  .block .studs i {
+    width: 24px; height: 8px;
+    border-radius: 3px 3px 0 0;
+    background: var(--c);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.3), inset 0 -1px 0 rgba(0,0,0,.15);
+  }
+  .block .icon { width: 36px; height: 36px; fill: var(--ink); }
+  .block .icon.flip { transform: scaleX(-1); }
+  .block .label { font-size: 11.5px; font-weight: 600; text-align: center; line-height: 1.15; padding-inline: 4px; }
+  .block input, .block .pill {
+    width: 58px;
+    border: 1px solid rgba(0,0,0,.2);
+    border-radius: 6px;
+    background: #fff;
+    color: #1f2421;
+    font-family: var(--font-num);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    padding: 2px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .block input.text, .block .pill.text { width: 76px; font-family: var(--font-ui); font-size: 13px; }
+  .block .swatch { width: 34px; height: 20px; border-radius: 5px; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+  .block .dir { display: flex; align-items: center; justify-content: center; width: 40px; height: 22px; border-radius: 6px; background: #fff; border: 1px solid rgba(0,0,0,.2); }
+  .block .dir svg { width: 18px; height: 18px; fill: #1f2421; }
+
+  /* LEGO ресми түстері */
+  .cat-motor  { --c: #0055bf; --d: #003c88; --ink: #fff; }    /* Bright Blue */
+  .cat-sensor { --c: #c91a09; --d: #8e1205; --ink: #fff; }    /* Bright Red */
+  .cat-light  { --c: #7b3fa0; --d: #552a70; --ink: #fff; }    /* Medium Lilac */
+  .cat-media  { --c: #237841; --d: #17552d; --ink: #fff; }    /* Bright Green */
+  .cat-ai     { --c: #008f9b; --d: #00656e; --ink: #fff; }    /* Dark Turquoise */
+  .block.start.cat-ai { --c: #008f9b; --d: #00656e; --ink: #fff; }
+  .cat-ai .icon { width: 28px; height: 28px; }
+  .block .model { max-width: 88px; font-size: 9.5px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .block.repeat.cat-ai .pill { width: 84px; }
+  .cat-flow   { --c: #f8bb3d; --d: #c48d18; --ink: #2b2100; } /* Bright Light Orange */
+  .block.start { --c: #fe8a18; --d: #c4600a; --ink: #2b1700; cursor: pointer; } /* Bright Orange */
+  .block.start .icon { width: 42px; height: 42px; }
+
+  /* «Қайтала» — ішіндегі блоктарды қоршайтын жақтау */
+  .block.repeat { display: block; padding: 0; }
+  .block.repeat > .arm {
+    position: absolute;
+    left: 0; width: 66px; height: 96px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  }
+  .block.repeat .icon { width: 30px; height: 30px; }
+  .block.repeat .label { font-size: 11px; }
+  .block.repeat input, .block.repeat .pill { width: 46px; }
+
+  /* орындалып жатқан блок: қалың жиек (бет пен қалыңдық бөлек салынғандықтан блокты жылжытпаймыз) */
+  .block.running > svg.shape .face { stroke: var(--run); stroke-width: 4; }
+
+  .placeholder {
+    position: absolute;
+    height: 96px;
+    border-radius: 14px;
+    border: 2px dashed var(--muted);
+    background: rgba(0,0,0,.05);
+  }
+  .ghost {
+    position: fixed;
+    z-index: 100;
+    pointer-events: none;
+    transform-origin: 0 0; /* масштаб пен бұрылу JS-тен беріледі */
+    filter: drop-shadow(0 12px 10px rgba(0,0,0,.25));
+  }
+
+  /* ---------- Блоктар сөресі ---------- */
+  /* сөре айналдырылады, ал «өшіру» қабаты оның үстінде қозғалмай тұрады */
+  #tray { position: relative; z-index: 3; }
+  #palette {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    overflow-x: auto;
+    padding-block: 6px 10px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+  .group { display: flex; flex-direction: column; gap: 2px; flex: none; }
+  .group + .group { padding-left: 20px; border-left: 1px solid var(--line); }
+  .group-title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .group-title::before { content: ''; width: 10px; height: 10px; border-radius: 2px; background: var(--gc); }
+  /* сөредегі блоктар кішірек — алаңға көбірек орын қалады */
+  .group-blocks { display: flex; align-items: flex-end; gap: 22px; zoom: .72; }
+  #palette .block { touch-action: pan-x; transition: transform .12s ease; }
+  @media (hover: hover) {
+    #palette .block:hover { transform: translateY(-3px); }
+  }
+  #trash {
+    display: none;
+    position: absolute; inset: 0;
+    z-index: 5;
+    gap: 10px;
+    align-items: center; justify-content: center;
+    background: #c91a09;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  #trash svg { width: 28px; height: 28px; fill: #fff; }
+  #tray.trash #trash { display: flex; }
+
+  @media (max-width: 1100px) {
+    .logo-text { display: none; }
+    .meter { display: none; }
+    .btn .txt { display: none; }
+    .btn { padding: 0 10px; }
+  }
+  @media (max-width: 640px) {
+    .menu { flex-wrap: wrap; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #status.busy .dot { animation: none; }
+    .block.running { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="menu">
+  <div class="logo">
+    <div class="logo-brick"></div>
+    <div class="logo-text"><b>RoboTil</b><span>WeDo 2.0 үшін AI-студия</span></div>
+  </div>
+  <button id="btnConnect" class="btn"></button>
+  <div class="chip" id="status"><span class="dot"></span><span id="statusText">Қосылмаған</span></div>
+  <div class="spacer"></div>
+  <div class="chip" id="ports"></div>
+  <div class="chip" id="distanceChip"></div>
+  <div class="chip" id="tiltChip"></div>
+  <button class="chip" id="btnMic" aria-pressed="false"></button>
+  <button id="btnAI" class="btn" aria-pressed="false" aria-controls="aiPanel"></button>
+  <button id="btnRun" class="btn"></button>
+  <button id="btnStop" class="btn"></button>
+  <button id="btnClear" class="btn icon-only" title="Алаңды тазалау" aria-label="Алаңды тазалау"></button>
+</header>
+
+<main id="stage">
+  <div id="canvas">
+    <div id="sizer"><div id="board"></div></div>
+    <div id="hint">Блоктарды төмендегі сөреден алаңның кез келген жеріне сүйре. Алаңды бос жерінен ұстап жылжытуға болады.</div>
+  </div>
+  <p id="legal">LEGO®, WeDo және SPIKE — LEGO Group сауда белгілері. RoboTil — LEGO Group-пен байланысы жоқ тәуелсіз жоба.</p>
+  <div id="zoom">
+    <button id="zoomOut" title="Кішірейту" aria-label="Кішірейту">−</button>
+    <button id="zoomVal" title="100%-ға қайтару">100%</button>
+    <button id="zoomIn" title="Үлкейту" aria-label="Үлкейту">+</button>
+  </div>
+  <div id="screen" hidden><div class="cap">Экран</div><div id="screenText"></div></div>
+  <aside id="aiPanel" hidden aria-label="AI үйрету">
+    <div class="ai-head"><b>AI үйрету</b><button id="aiClose" class="btn icon-only" aria-label="Жабу"></button></div>
+    <p class="ai-help">Бір модель — AI-ға үйретілетін бір тапсырма. Мысалы, «Қол белгілері»: қашықтық датчигінің алдында қолды бұлғау. «Жер беті»: Майло тегіс не бұдыр жермен жүргенде еңіс датчигі дірілді сезеді. «Дыбыстар»: микрофон шапалақ пен ысқырықты ажыратады, өз дауысыңмен «алға», «тоқта» сияқты сөздерді де үйретуге болады.</p>
+    <div class="ai-model">
+      <label for="aiModel">Модель</label>
+      <div class="ai-model-row">
+        <select id="aiModel"></select>
+        <button id="aiAddModel" class="btn icon-only" title="Жаңа модель" aria-label="Жаңа модель">+</button>
+        <button id="aiDelModel" class="btn icon-only" title="Модельді өшіру" aria-label="Модельді өшіру"></button>
+      </div>
+      <label for="aiModelName">Модель аты</label>
+      <input id="aiModelName" maxlength="16">
+      <span class="ai-label">Қай датчикпен сезеді</span>
+      <div id="aiSensorPick" class="ai-seg" role="group" aria-label="Датчик">
+        <button data-sensor="distance">Қашықтық</button>
+        <button data-sensor="tilt">Еңіс</button>
+        <button data-sensor="mic">Дыбыс</button>
+        <button data-sensor="both">Екеуі</button>
+      </div>
+    </div>
+    <div class="ai-live"><span>Қазір таныды</span><b id="aiNow" class="idle">—</b><span id="aiConf"></span></div>
+    <div id="aiSensors" class="ai-note"></div>
+    <div id="aiList"></div>
+    <button id="aiAdd" class="btn">+ Жаңа қимыл немесе зат</button>
+    <p class="ai-help">Әрқайсысын 3–5 рет жаз. «Ештеңе жоқ» дегенге ештеңе істемей жаз — AI тыныш күйді де білуі керек.</p>
+    <p class="ai-help">Бағдарламада:<br>«AI танығанда» — танылған сәтте тізбекті бастайды.<br>«AI танығанша» — танылғанша күтеді.<br>«Егер AI таныса» — ішіндегі блоктар тек танылса орындалады.<br>«AI мысал жаз» — бағдарламаның ішінде мысал жазады, мысалы Майло жүріп келе жатқанда.</p>
+  </aside>
+</main>
+
+<footer id="tray">
+  <div id="palette"></div>
+  <div id="trash"></div>
+</footer>
+
+<script>
+// ===== WeDo 2.0 BLE протоколы (node-poweredup және scratch-vm scratch3_wedo2 бойынша тексерілген) =====
+const DEVICE_SERVICE = '00001523-1212-efde-1523-785feabcd123';
+const IO_SERVICE     = '00004f0e-1212-efde-1523-785feabcd123';
+const ATTACHED_IO    = '00001527-1212-efde-1523-785feabcd123'; // порт жалғау/ажырату хабарлары
+const INPUT_VALUES   = '00001560-1212-efde-1523-785feabcd123'; // датчик мәндері
+const INPUT_COMMAND  = '00001563-1212-efde-1523-785feabcd123'; // датчик режимін орнату
+const OUTPUT_COMMAND = '00001565-1212-efde-1523-785feabcd123'; // мотор / шам командалары
+
+const TYPE = { MOTOR: 1, TILT: 34, DISTANCE: 35, LED: 23 };
+const LED_PORT = 6;
+const TYPE_NAMES = { 1: 'мотор', 34: 'еңіс', 35: 'қашықтық' };
+
+const COLORS = [
+  { name: 'Қызыл',    rgb: [255, 0, 0] },
+  { name: 'Сарғыш',   rgb: [255, 100, 0] },
+  { name: 'Сары',     rgb: [255, 220, 0] },
+  { name: 'Жасыл',    rgb: [0, 255, 0] },
+  { name: 'Көгілдір', rgb: [0, 200, 255] },
+  { name: 'Көк',      rgb: [0, 0, 255] },
+  { name: 'Күлгін',   rgb: [160, 0, 255] },
+  { name: 'Сөндіру',  rgb: [0, 0, 0] },
+];
+
+// Еңіс бағыттары (бұрылу бұрышы — көрсеткі иконкасы үшін)
+const TILT_DIRS = [
+  { key: 'up',    name: 'Жоғары', rot: 0 },
+  { key: 'right', name: 'Оңға',   rot: 90 },
+  { key: 'down',  name: 'Төмен',  rot: 180 },
+  { key: 'left',  name: 'Солға',  rot: 270 },
+];
+
+// ===== Иконкалар (Material Icons, Apache 2.0) =====
+const ICON_PATHS = {
+  play:  'M8 5v14l11-7z',
+  turn:  'M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z',
+  bolt:  'M13 2 4 14h7l-1 8 9-12h-7z',
+  timer: 'M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61 1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.96 8.96 0 0 0 12 4a9 9 0 1 0 9 9c0-2.12-.74-4.07-1.97-5.61zM12 20a7 7 0 1 1 0-14 7 7 0 0 1 0 14z',
+  stop:  'M7 6h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z',
+  bulb:  'M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z',
+  glass: 'M6 2v6h.01L6 8.01 10 12l-4 4 .01.01H6V22h12v-5.99h-.01L18 16l-4-4 4-3.99-.01-.01H18V2H6z',
+  radar: 'M7.76 16.24C6.67 15.16 6 13.66 6 12s.67-3.16 1.76-4.24l1.42 1.42C8.45 9.9 8 10.9 8 12s.45 2.1 1.17 2.83l-1.41 1.41zm8.48 0C17.33 15.16 18 13.66 18 12s-.67-3.16-1.76-4.24l-1.42 1.42C15.55 9.9 16 10.9 16 12s-.45 2.1-1.17 2.83l1.41 1.41zM12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm8 2c0 2.21-.9 4.21-2.35 5.65l1.42 1.42C20.88 17.26 22 14.76 22 12s-1.12-5.26-2.93-7.07l-1.42 1.42A7.94 7.94 0 0 1 20 12zM6.35 6.35 4.93 4.93C3.12 6.74 2 9.24 2 12s1.12 5.26 2.93 7.07l1.42-1.42C4.9 16.21 4 14.21 4 12s.9-4.21 2.35-5.65z',
+  loop:  'M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z',
+  key:   'M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z',
+  mail:  'M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z',
+  send:  'M2.01 21 23 12 2.01 3 2 10l15 2-15 2z',
+  tilt:  'M12 2 4.5 20.29l.71.71L12 18l6.79 3 .71-.71z',
+  arrow: 'M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z',
+  sound: 'M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z',
+  screen:'M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z',
+  bt:    'M17.71 7.71 12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z',
+  close: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+  trash: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+  plug:  'M16 7V3h-2v4h-4V3H8v4c-1.1 0-2 .9-2 2v5.5L9.5 18v3h5v-3l3.5-3.5V9c0-1.1-.9-2-2-2z',
+  mic:   'M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z',
+  micOff:'M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3 3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z',
+  spark: 'M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z',
+  rec:   'M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z',
+};
+const icon = (name, cls = 'ic', style = '') =>
+  `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"${style ? ` style="${style}"` : ''}><path d="${ICON_PATHS[name]}"/></svg>`;
+
+// ===== Блоктар (LEGO WeDo 2.0 бағдарламасындағы жиынтық бойынша) =====
+// hat: тізбекті бастайтын блок — тек тізбектің басында тұрады, сол жағы тегіс
+const BLOCKS = {
+  start:    { cat: 'flow',   icon: 'play',   label: 'Бастау', hat: true },
+  keyStart: { cat: 'flow',   icon: 'key',    label: 'Пернемен', hat: true, param: { kind: 'text', def: 'a', max: 1 } },
+  msgStart: { cat: 'flow',   icon: 'mail',   label: 'Хабармен', hat: true, param: { kind: 'text', def: 'А', max: 6 } },
+  sendMsg:  { cat: 'flow',   icon: 'send',   label: 'Хабар жібер', param: { kind: 'text', def: 'А', max: 6 } },
+  wait:     { cat: 'flow',   icon: 'glass',  label: 'Күт, сек', param: { kind: 'num', min: 0.5, max: 60, step: 0.5, def: 1 } },
+  repeat:   { cat: 'flow',   icon: 'loop',   label: 'Қайтала', param: { kind: 'count', def: 0 } },
+  near:     { cat: 'sensor', icon: 'radar',  label: 'Жақындағанша', param: { kind: 'num', min: 1, max: 100, def: 30 } },
+  // дауыс деңгейі (0–10) осы саннан қатты болғанша күтеді — WeDo-дағы дыбыс датчигі
+  loud:     { cat: 'sensor', icon: 'mic',    label: 'Дауыс деңгейі', param: { kind: 'num', min: 1, max: 10, def: 6 } },
+  far:      { cat: 'sensor', icon: 'radar',  label: 'Алыстағанша', param: { kind: 'num', min: 1, max: 100, def: 60 } },
+  tilt:     { cat: 'sensor', icon: 'tilt',   label: 'Еңкейгенше', param: { kind: 'tilt', def: 0 } },
+  // AI: үйретілген модель қимылды/затты таниды. b.m — модель аты, b.v — қимыл аты
+  aiStart:  { cat: 'ai',     icon: 'spark',  label: 'AI танығанда', hat: true, param: { kind: 'aiclass' } },
+  aiWait:   { cat: 'ai',     icon: 'spark',  label: 'AI танығанша', param: { kind: 'aiclass' } },
+  aiIf:     { cat: 'ai',     icon: 'spark',  label: 'Егер AI таныса', param: { kind: 'aiclass' } },
+  aiRecord: { cat: 'ai',     icon: 'rec',    label: 'AI мысал жаз', param: { kind: 'aiclass' } },
+  fwd:      { cat: 'motor',  icon: 'turn',   label: 'Мотор осылай' },
+  back:     { cat: 'motor',  icon: 'turn',   label: 'Мотор анылай', flip: true },
+  speed:    { cat: 'motor',  icon: 'bolt',   label: 'Қуат', param: { kind: 'num', min: 0, max: 10, def: 5 } },
+  runFor:   { cat: 'motor',  icon: 'timer',  label: 'Мотор, сек', param: { kind: 'num', min: 0.5, max: 60, step: 0.5, def: 2 } },
+  stop:     { cat: 'motor',  icon: 'stop',   label: 'Мотор сөн' },
+  light:    { cat: 'light',  icon: 'bulb',   label: 'Шам', param: { kind: 'color', def: 3 } },
+  sound:    { cat: 'media',  icon: 'sound',  label: 'Дыбыс', param: { kind: 'num', min: 1, max: 8, def: 1 } },
+  display:  { cat: 'media',  icon: 'screen', label: 'Экран', param: { kind: 'text', def: 'Сәлем!', max: 12 } },
+};
+const PALETTE = [
+  { title: 'Басқару',   color: '#f8bb3d', types: ['start', 'keyStart', 'msgStart', 'sendMsg', 'wait', 'repeat'] },
+  { title: 'Датчиктер', color: '#c91a09', types: ['near', 'far', 'tilt', 'loud'] },
+  { title: 'AI',        color: '#008f9b', types: ['aiStart', 'aiWait', 'aiIf', 'aiRecord'] },
+  { title: 'Мотор',     color: '#0055bf', types: ['fwd', 'back', 'speed', 'runFor', 'stop'] },
+  { title: 'Шам',       color: '#7b3fa0', types: ['light'] },
+  { title: 'Дыбыс, экран', color: '#237841', types: ['sound', 'display'] },
+];
+const isHat = b => !!BLOCKS[b?.type]?.hat;
+
+const $ = id => document.getElementById(id);
+const board = $('board');
+const sizer = $('sizer');
+const canvas = $('canvas');
+const palette = $('palette');
+const tray = $('tray');
+
+// Алаңда бірнеше тізбек болады: { x, y, blocks: [...] }. «Қайтала» блогының ішінде body: [...] болады.
+const STORAGE_KEY = 'wedo2-board-v2';
+const DEFAULT_CHAINS = [{
+  x: 40, y: 60,
+  blocks: [
+    { type: 'start' }, { type: 'light', v: 3 },
+    { type: 'repeat', v: 2, body: [{ type: 'fwd' }, { type: 'wait', v: 1 }, { type: 'back' }, { type: 'wait', v: 1 }] },
+    { type: 'stop' }, { type: 'sound', v: 8 },
+  ],
+}];
+let chains = loadChains();
+let activeChain = chains[0] || null; // сөредегі блокты басқанда осы тізбектің соңына қосылады
+
+function newBlock(type) {
+  const p = BLOCKS[type].param;
+  const b = p ? { type, v: p.def } : { type };
+  if (isFrame(b)) b.body = [];
+  if (p?.kind === 'aiclass') {
+    // соңғы ашылған модельдің екінші қимылы (біріншісі әдетте «ештеңе жоқ»)
+    const m = ai.models[ai.active] ?? ai.models[0];
+    b.m = m?.name ?? '';
+    b.v = m?.classes[1]?.name ?? m?.classes[0]?.name ?? '';
+  }
+  return b;
+}
+
+function validList(list, top) {
+  return Array.isArray(list) && list.every((b, i) =>
+    BLOCKS[b?.type] && (!isHat(b) || (top && i === 0)) && (!isFrame(b) || validList(b.body, false)));
+}
+function loadChains() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (Array.isArray(saved) && saved.every(c =>
+      Number.isFinite(c?.x) && Number.isFinite(c?.y) && c.blocks?.length > 0 && validList(c.blocks, true))) return saved;
+  } catch (e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_CHAINS));
+}
+function saveProgram() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(chains)); } catch (e) {}
+}
+
+// Жаңа тізбекке бос орын: бар тізбектердің астына
+function freeSpot() {
+  const bottoms = chains.map(c => c.y + BH + listExt(c.blocks).down);
+  return { x: 40, y: chains.length ? Math.max(...bottoms) + 50 : 60 };
+}
+
+// ===== Пазл пішіні және орналасу =====
+// Бет 96×96, оң жақта томпақ құлақша, сол жақта дәл сондай ойық — көрші блоктар бір-біріне кіреді
+const BW = 96, BH = 96, R = 14, KNOB = 11, DEPTH = 8, STUD = 12;
+// «Қайтала» жақтауы: сол иығы (иконка мен сан), оң иығы және үстіңгі/астыңғы жолақ қалыңдығы
+const RL = 66, RR = 16, PAD = 12;
+// Ішіне блок салынатын жақтаулар: «Қайтала» және «Егер AI таныса» (оның иығы кеңірек — қимыл аты сыйсын)
+const isFrame = b => b?.type === 'repeat' || b?.type === 'aiIf';
+const armW = b => b.type === 'aiIf' ? 96 : RL;
+
+function outlinePath(w, h, mid, notch) {
+  return `M${R},0H${w - R}Q${w},0 ${w},${R}V${mid - KNOB}` +
+    `A${KNOB},${KNOB} 0 0 1 ${w},${mid + KNOB}` +
+    `V${h - R}Q${w},${h} ${w - R},${h}H${R}Q0,${h} 0,${h - R}` +
+    (notch ? `V${mid + KNOB}A${KNOB},${KNOB} 0 0 0 0,${mid - KNOB}` : '') +
+    `V${R}Q0,0 ${R},0Z`;
+}
+
+// Блоктың ені мен биіктігі. Жақтау ішіндегі блоктарға қарай өседі (ішінде жақтау болса да).
+function itemWidth(b) {
+  if (isFrame(b)) return armW(b) + bodyWidth(b.body) + RR;
+  if (b.type === '__ph') return b.w;
+  return BW;
+}
+function bodyWidth(list) { return Math.max(BW, list.reduce((s, b) => s + itemWidth(b), 0)); }
+function itemExt(b) {
+  if (!isFrame(b)) return { up: STUD, down: DEPTH };
+  const f = frameDims(b);
+  return { up: f.ft, down: f.fb + DEPTH };
+}
+function listExt(list) {
+  return list.reduce((e, b) => {
+    const x = itemExt(b);
+    return { up: Math.max(e.up, x.up), down: Math.max(e.down, x.down) };
+  }, { up: STUD, down: DEPTH });
+}
+function frameDims(b) {
+  const e = listExt(b.body);
+  return { ft: e.up + PAD, fb: e.down + PAD, w: itemWidth(b) };
+}
+
+// Тізбекті аралап шығады: onItem — әр блок, onSlot — блок қоюға болатын әр орын
+function walk(list, x, y, depth, onItem, onSlot) {
+  list.forEach((b, i) => {
+    onSlot?.(list, i, x, y, depth);
+    const w = itemWidth(b);
+    onItem?.(b, list, i, x, y, w);
+    if (isFrame(b)) walk(b.body, x + armW(b), y, depth + 1, onItem, onSlot);
+    x += w;
+  });
+  onSlot?.(list, list.length, x, y, depth);
+}
+
+// Блоктың пішіні: w×h бет, mid — құлақша/ойық биіктігі, oy — бет басынан элемент басына дейінгі ығысу
+function geom(b) {
+  if (!isFrame(b)) return { w: BW, h: BH, mid: BH / 2, notch: !isHat(b), extra: '', oy: 0 };
+  const { ft, fb, w } = frameDims(b);
+  const h = ft + BH + fb;
+  const mid = ft + BH / 2;
+  const x1 = armW(b), x2 = w - RR, y1 = PAD, y2 = h - PAD, r = 10;
+  const hole = `M${x1 + r},${y1}H${x2 - r}Q${x2},${y1} ${x2},${y1 + r}V${y2 - r}Q${x2},${y2} ${x2 - r},${y2}` +
+    `H${x1 + r}Q${x1},${y2} ${x1},${y2 - r}V${y1 + r}Q${x1},${y1} ${x1 + r},${y1}Z` +
+    // ішкі бірінші блоктың ойығына кіретін құлақша
+    `M${x1},${mid - KNOB}A${KNOB},${KNOB} 0 0 1 ${x1},${mid + KNOB}Z`;
+  return { w, h, mid, notch: true, extra: hole, oy: ft };
+}
+
+// Түстер CSS-тен келеді (--c — беті, --d — бүйір қалыңдығы).
+// parts: 'both' — сөредегі жалғыз блок; алаңда 'face' мен 'depth' бөлек қабаттарға салынады
+function shapeSvg(g, parts = 'both') {
+  const d = outlinePath(g.w, g.h, g.mid, g.notch) + g.extra;
+  return `<svg class="shape" width="${g.w + KNOB}" height="${g.h + DEPTH}" viewBox="0 0 ${g.w + KNOB} ${g.h + DEPTH}" aria-hidden="true">` +
+    (parts !== 'face' ? `<path class="depth" fill-rule="evenodd" transform="translate(0 ${DEPTH})" d="${d}"/>` : '') +
+    (parts !== 'depth' ? `<path class="face" fill-rule="evenodd" d="${d}"/>` : '') + `</svg>`;
+}
+
+// Блок параметрінің басқару элементі (сан, мәтін, түс, бағыт, қайталау саны)
+function paramControl(b, editable) {
+  const p = BLOCKS[b.type].param;
+  if (!p) return null;
+  if (p.kind === 'color') {
+    const sw = document.createElement('div');
+    sw.className = 'swatch';
+    const c = COLORS[b.v];
+    const css = c.rgb.every(x => x === 0) ? '#2a2a3a' : `rgb(${c.rgb.join(',')})`;
+    sw.style.background = css;
+    sw.style.setProperty('--sw', c.rgb.every(x => x === 0) ? 'transparent' : css);
+    sw.title = c.name + ' — түсін ауыстыру үшін бас';
+    return sw;
+  }
+  if (p.kind === 'tilt') {
+    const t = TILT_DIRS[b.v];
+    const dir = document.createElement('div');
+    dir.className = 'dir';
+    dir.title = t.name + ' — бағытын ауыстыру үшін бас';
+    dir.innerHTML = icon('arrow', '', `transform:rotate(${t.rot}deg)`);
+    return dir;
+  }
+  if (p.kind === 'aiclass') {
+    const pill = document.createElement('div');
+    pill.className = 'pill text';
+    pill.textContent = b.v;
+    pill.title = 'Қимылды ауыстыру үшін бас';
+    return pill;
+  }
+  const shown = p.kind === 'count' && b.v === 0 ? '∞' : String(b.v);
+  const cls = p.kind === 'text' ? 'text' : '';
+  if (!editable) {
+    const pill = document.createElement('div');
+    pill.className = 'pill ' + cls;
+    pill.textContent = shown;
+    return pill;
+  }
+  const input = document.createElement('input');
+  input.className = cls;
+  input.value = shown;
+  if (p.kind === 'num') {
+    input.type = 'number';
+    input.min = p.min; input.max = p.max; input.step = p.step || 1;
+  } else {
+    input.type = 'text';
+    if (p.kind === 'text') input.maxLength = p.max;
+    if (p.kind === 'count') { input.inputMode = 'numeric'; input.title = 'Сан немесе ∞ (шексіз)'; }
+  }
+  input.addEventListener('change', () => {
+    if (p.kind === 'num') {
+      const step = p.step || 1;
+      const n = Number(input.value);
+      b.v = Number.isFinite(n) ? Math.max(p.min, Math.min(p.max, Math.round(n / step) * step)) : p.def;
+    } else if (p.kind === 'count') {
+      const n = parseInt(input.value, 10);
+      b.v = n > 0 ? Math.min(n, 99) : 0;
+    } else {
+      const s = input.value.trim();
+      b.v = s ? (b.type === 'keyStart' ? s.toLowerCase() : s) : p.def;
+    }
+    input.value = p.kind === 'count' && b.v === 0 ? '∞' : b.v;
+    saveProgram();
+  });
+  return input;
+}
+
+function makeBlockEl(b, editable, parts = 'both') {
+  const def = BLOCKS[b.type];
+  const hat = isHat(b);
+  const el = document.createElement('div');
+  el.className = `block cat-${def.cat}` + (hat ? ' start' : '');
+  el.dataset.oy = 0;
+  el.innerHTML = shapeSvg(geom(b), parts) +
+    `<div class="studs"><i></i><i></i></div>` +
+    icon(def.icon, 'icon' + (def.flip ? ' flip' : '')) + `<div class="label"></div>`;
+  el.querySelector('.label').textContent = def.label;
+  el.append(...paramNodes(b, editable));
+  return el;
+}
+
+// Параметр элементі; AI блоктарында астына модель аты да жазылады
+function paramNodes(b, editable) {
+  const ctl = paramControl(b, editable);
+  const nodes = ctl ? [ctl] : [];
+  if (BLOCKS[b.type].param?.kind === 'aiclass') {
+    const m = document.createElement('div');
+    m.className = 'model';
+    m.textContent = b.m;
+    nodes.push(m);
+  }
+  return nodes;
+}
+
+// Жақтау («Қайтала», «Егер AI таныса»): сыртқы пішіннен ішкі «тесік» ойылады, ішкі блоктар сол тесікке орналасады
+function makeRepeatEl(b, editable, parts = 'both') {
+  const def = BLOCKS[b.type];
+  const g = geom(b);
+  const aw = armW(b);
+  const el = document.createElement('div');
+  el.className = `block repeat cat-${def.cat}`;
+  el.dataset.oy = g.oy;
+  el.style.width = g.w + 'px';
+  el.style.height = (g.h + DEPTH) + 'px';
+  el.innerHTML = shapeSvg(g, parts) +
+    `<div class="studs" style="width:${aw}px"><i></i></div>` +
+    `<div class="arm" style="top:${g.oy}px;width:${aw}px">${icon(def.icon, 'icon')}<div class="label"></div></div>`;
+  el.querySelector('.label').textContent = def.label;
+  el.querySelector('.arm').append(...paramNodes(b, editable));
+  return el;
+}
+
+// Екі қабат: алдымен барлық блоктардың бүйір қалыңдығы, үстінен беттері.
+// Сонда көрші блоктың қалыңдығы алдыңғы блоктың құлақшасын жаппайды — екеуі бір деңгейде тұрады.
+function makeLayers(container) {
+  const depth = document.createElement('div');
+  const face = document.createElement('div');
+  depth.className = face.className = 'layer';
+  container.append(depth, face);
+  return { depth, face };
+}
+
+// Тізбекті қабаттарға салады. mode: 'board' (алаң) немесе 'ghost' (сүйреліп жүрген блоктар)
+let blockEls = new Map();
+function drawList(layers, list, x, y, mode) {
+  const editable = mode === 'board' && !drag?.active;
+  const container = layers.face;
+  let maxX = x, maxY = y;
+  walk(list, x, y, 0, (b, owner, i, bx, by, w) => {
+    let el;
+    if (b.type === '__ph') {
+      el = document.createElement('div');
+      el.className = 'placeholder';
+      el.style.left = bx + 'px';
+      el.style.top = by + 'px';
+      el.style.width = (w - 4) + 'px';
+    } else {
+      el = isFrame(b) ? makeRepeatEl(b, editable, 'face') : makeBlockEl(b, editable, 'face');
+      el.classList.add('on-board');
+      el.style.left = bx + 'px';
+      el.style.top = (by - Number(el.dataset.oy)) + 'px';
+      const side = document.createElement('div');
+      side.className = 'side ' + el.className;
+      side.style.left = el.style.left;
+      side.style.top = el.style.top;
+      side.innerHTML = shapeSvg(geom(b), 'depth');
+      layers.depth.appendChild(side);
+      if (mode === 'board') {
+        blockEls.set(b, el);
+        el.addEventListener('pointerdown', e => onPointerDown(e, 'board', { list: owner, index: i, x: bx, y: by }));
+      }
+    }
+    container.appendChild(el);
+    maxX = Math.max(maxX, bx + w);
+    maxY = Math.max(maxY, by + BH + itemExt(b).down);
+  });
+  return { maxX, maxY };
+}
+
+function render() {
+  const d = drag?.active ? drag : null;
+  // жалғанатын орынды көрсету үшін тізбекке уақытша «орын» блогын қосамыз
+  let ph = null;
+  if (d?.snap) {
+    ph = { type: '__ph', w: d.width };
+    d.snap.list.splice(d.snap.k, 0, ph);
+  }
+  board.innerHTML = '';
+  blockEls = new Map();
+  const layers = makeLayers(board);
+  let maxX = 0, maxY = 0;
+  chains.forEach(ch => {
+    const m = drawList(layers, ch.blocks, ch.x, ch.y, 'board');
+    maxX = Math.max(maxX, m.maxX);
+    maxY = Math.max(maxY, m.maxY);
+  });
+  if (ph) d.snap.list.splice(d.snap.k, 1);
+  // блоктардан әрі қарай тағы жарты экран бос орын — алаңды жылжытып, жаңа тізбек құруға болады
+  const w = Math.max(canvas.clientWidth / zoom, maxX) + canvas.clientWidth / zoom * 0.6;
+  const h = Math.max(canvas.clientHeight / zoom, maxY) + canvas.clientHeight / zoom * 0.6;
+  board.style.width = w + 'px';
+  board.style.height = h + 'px';
+  board.style.transform = `scale(${zoom})`;
+  sizer.style.width = (w * zoom) + 'px';
+  sizer.style.height = (h * zoom) + 'px';
+  sizer.style.backgroundSize = `${24 * zoom}px ${24 * zoom}px`; // негіз тақтасының дөңестері
+  $('hint').style.display = !d && chains.every(c => c.blocks.length <= 1) ? 'block' : 'none';
+}
+
+function renderPalette() {
+  PALETTE.forEach(g => {
+    const group = document.createElement('div');
+    group.className = 'group';
+    group.innerHTML = `<div class="group-title"></div><div class="group-blocks"></div>`;
+    group.style.setProperty('--gc', g.color);
+    group.querySelector('.group-title').textContent = g.title;
+    g.types.forEach(type => {
+      const b = newBlock(type);
+      const el = isFrame(b) ? makeRepeatEl(b, false) : makeBlockEl(b, false);
+      el.title = BLOCKS[type].label;
+      el.addEventListener('pointerdown', e => onPointerDown(e, 'palette', type));
+      group.querySelector('.group-blocks').appendChild(el);
+    });
+    palette.appendChild(group);
+  });
+}
+
+// ===== Сүйреу (тышқан да, саусақ та) =====
+let drag = null;
+
+function onPointerDown(e, from, ref) {
+  if (isRunning()) return;
+  if (e.button > 0 || e.target.closest('input')) return;
+  e.stopPropagation(); // жақтау ішіндегі блокты ұстағанда жақтаудың өзі ұсталмасын
+  drag = { from, ref, x0: e.clientX, y0: e.clientY, active: false, el: e.currentTarget };
+}
+
+// Тізбектің ортасынан ұстасаң — сол блок пен одан кейінгілері бірге ажырайды (WeDo/Scratch-тегідей)
+function startDrag() {
+  const d = drag;
+  d.backup = JSON.stringify(chains);
+  let ox, oy, scale = 1;
+  if (d.from === 'palette') {
+    d.items = [newBlock(d.ref)];
+    const r = d.el.getBoundingClientRect();
+    scale = r.width / itemWidth(d.items[0]); // сөредегі блоктар кішірейтілген
+    ox = r.left;
+    oy = r.top + Number(d.el.dataset.oy) * scale;
+  } else {
+    const br = board.getBoundingClientRect();
+    scale = zoom;
+    ox = br.left + d.ref.x * zoom;
+    oy = br.top + d.ref.y * zoom;
+    d.items = d.ref.list.splice(d.ref.index);
+    chains = chains.filter(c => c.blocks.length > 0);
+    tray.classList.add('trash');
+  }
+  d.dx = (d.x0 - ox) / scale;
+  d.dy = (d.y0 - oy) / scale;
+  d.width = d.items.reduce((s, b) => s + itemWidth(b), 0);
+  d.ghost = document.createElement('div');
+  d.ghost.className = 'ghost';
+  d.ghost.style.transform = `scale(${zoom}) rotate(-3deg)`;
+  drawList(makeLayers(d.ghost), d.items, 0, 0, 'ghost');
+  document.body.appendChild(d.ghost);
+  d.snap = null;
+  d.active = true;
+  render();
+}
+
+// Сүйреліп жүрген блоктардың сол жақ жоғарғы бұрышына ең жақын жалғау орнын іздейміз.
+// k-орынға кірістіру: жаңа блок k-блоктың орнына келеді, ал k-дан кейінгілер оңға ысырылады.
+function findSnap(gx, gy) {
+  const hat = isHat(drag.items[0]);
+  let best = null;
+  chains.forEach(ch => walk(ch.blocks, ch.x, ch.y, 0, null, (list, k, sx, sy, depth) => {
+    if (hat) {
+      if (depth > 0 || k !== 0 || isHat(list[0])) return; // бастау блогы тек тізбектің алдына
+    } else if (depth === 0 && k === 0 && isHat(list[0])) {
+      return; // бастау блогының алдына ештеңе қойылмайды
+    }
+    const dx = gx - sx, dy = gy - sy;
+    if (Math.abs(dx) > 60 || Math.abs(dy) > 56) return;
+    const dist = Math.hypot(dx, dy);
+    if (!best || dist < best.dist) best = { list, k, dist };
+  }));
+  return best;
+}
+
+// Блокты алаңның шетіне апарғанда алаң сол жаққа жылжиды
+function autoScroll(e) {
+  const r = canvas.getBoundingClientRect();
+  const EDGE = 40, STEP = 14;
+  if (e.clientY < r.top || e.clientY > r.bottom) return;
+  const dx = e.clientX < r.left + EDGE ? -STEP : e.clientX > r.right - EDGE ? STEP : 0;
+  const dy = e.clientY < r.top + EDGE ? -STEP : e.clientY > r.bottom - EDGE ? STEP : 0;
+  if (dx || dy) canvas.scrollBy(dx, dy);
+}
+
+// Бос жерден ұстап тартсаң — алаң жылжиды (саусақпен браузердің өзі жылжытады)
+let pan = null;
+canvas.addEventListener('pointerdown', e => {
+  if (e.button !== 0 || e.pointerType === 'touch' || e.target.closest('.block, input')) return;
+  pan = { x: e.clientX, y: e.clientY, left: canvas.scrollLeft, top: canvas.scrollTop };
+  canvas.setPointerCapture(e.pointerId);
+  canvas.classList.add('panning');
+});
+canvas.addEventListener('pointermove', e => {
+  if (!pan) return;
+  canvas.scrollLeft = pan.left - (e.clientX - pan.x);
+  canvas.scrollTop = pan.top - (e.clientY - pan.y);
+});
+const endPan = () => { pan = null; canvas.classList.remove('panning'); };
+canvas.addEventListener('pointerup', endPan);
+canvas.addEventListener('pointercancel', endPan);
+
+function isOverCanvas(x, y) {
+  const r = canvas.getBoundingClientRect();
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+}
+
+// Сүйреліп жүрген блоктардың басы алаң координатасында (масштабты ескереміз)
+function boardPoint(e, d = drag) {
+  const r = board.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / zoom - d.dx, y: (e.clientY - r.top) / zoom - d.dy };
+}
+
+// ===== Масштаб =====
+const ZOOM_KEY = 'wedo2-zoom';
+let zoom = 1;
+try { zoom = Math.min(1.6, Math.max(0.4, Number(localStorage.getItem(ZOOM_KEY)) || 1)); } catch (e) {}
+function setZoom(z) {
+  zoom = Math.round(Math.min(1.6, Math.max(0.4, z)) * 10) / 10;
+  try { localStorage.setItem(ZOOM_KEY, zoom); } catch (e) {}
+  $('zoomVal').textContent = Math.round(zoom * 100) + '%';
+  $('zoomOut').disabled = zoom <= 0.4;
+  $('zoomIn').disabled = zoom >= 1.6;
+  render();
+}
+
+window.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (!drag.active) {
+    if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
+    startDrag();
+  }
+  drag.ghost.style.left = (e.clientX - drag.dx * zoom) + 'px';
+  drag.ghost.style.top = (e.clientY - drag.dy * zoom) + 'px';
+  autoScroll(e);
+  let snap = null;
+  if (isOverCanvas(e.clientX, e.clientY)) {
+    const p = boardPoint(e);
+    snap = findSnap(p.x, p.y);
+  }
+  const same = (a, b) => a === b || (a && b && a.list === b.list && a.k === b.k);
+  if (!same(snap, drag.snap)) {
+    drag.snap = snap;
+    render();
+  }
+});
+
+window.addEventListener('pointerup', e => {
+  if (!drag) return;
+  const d = drag;
+  drag = null;
+  if (d.active) {
+    d.ghost.remove();
+    tray.classList.remove('trash');
+    if (isOverCanvas(e.clientX, e.clientY)) {
+      if (d.snap) {
+        d.snap.list.splice(d.snap.k, 0, ...d.items);
+        activeChain = chains.find(c => c.blocks === d.snap.list) || activeChain;
+      } else {
+        const p = boardPoint(e, d);
+        const ch = {
+          x: Math.max(8, Math.round(p.x)),
+          y: Math.max(listExt(d.items).up + 4, Math.round(p.y)),
+          blocks: d.items,
+        };
+        chains.push(ch);
+        activeChain = ch;
+      }
+    }
+    // алаңнан тыс тасталса — блоктар өшіріледі
+  } else {
+    onTap(d);
+  }
+  render();
+  saveProgram();
+});
+
+window.addEventListener('pointercancel', () => {
+  if (!drag) return;
+  if (drag.active) {
+    drag.ghost.remove();
+    tray.classList.remove('trash');
+    chains = JSON.parse(drag.backup);
+  }
+  drag = null;
+  render();
+});
+
+function onTap(d) {
+  if (d.from === 'palette') {
+    const b = newBlock(d.ref);
+    if (!isHat(b) && activeChain && chains.includes(activeChain)) {
+      activeChain.blocks.push(b);
+    } else {
+      activeChain = { ...freeSpot(), blocks: [b] };
+      chains.push(activeChain);
+    }
+    return;
+  }
+  const b = d.ref.list[d.ref.index];
+  activeChain = chains.find(c => c.blocks === d.ref.list) || activeChain;
+  if (isHat(b)) return startChains([chains.find(c => c.blocks[0] === b)]);
+  const kind = BLOCKS[b.type].param?.kind;
+  if (kind === 'color') {
+    b.v = (b.v + 1) % COLORS.length;
+    setLed(COLORS[b.v].rgb);
+  } else if (kind === 'tilt') {
+    b.v = (b.v + 1) % TILT_DIRS.length;
+  } else if (kind === 'aiclass') {
+    // барлық модельдердің барлық қимылдары бойынша кезекпен ауысады
+    const pairs = ai.models.flatMap(m => m.classes.map(c => [m.name, c.name]));
+    if (pairs.length) {
+      const i = pairs.findIndex(([m, c]) => m === b.m && c === b.v);
+      [b.m, b.v] = pairs[(i + 1) % pairs.length];
+    }
+  } else if (b.type === 'sound') {
+    playSound(b.v);
+  }
+}
+
+// ===== Хабқа қосылу =====
+let device = null;
+let inputCmdChar = null;
+let outputCmdChar = null;
+const ports = {}; // portId -> type
+let distance = null;
+let tilt = null; // { x, y } — градус
+
+const isConnected = () => !!(device && device.gatt.connected);
+
+// GATT бір уақытта тек бір операцияны қабылдайды, сондықтан жазуларды кезекке қоямыз
+let writeQueue = Promise.resolve();
+function write(char, bytes) {
+  writeQueue = writeQueue
+    .then(() => char.writeValue(new Uint8Array(bytes)))
+    .catch(e => showError('Команда жіберілмеді: ' + e.message));
+  return writeQueue;
+}
+
+function setStatus(text, kind) {
+  $('statusText').textContent = text;
+  $('status').title = text;
+  $('status').className = 'chip ' + (kind || '');
+}
+function showError(text) { setStatus(text, 'err'); }
+
+function setConnectedUI(on) {
+  const b = $('btnConnect');
+  b.innerHTML = on ? icon('close') + '<span class="txt">Ажырату</span>' : icon('bt') + '<span class="txt">Қосылу</span>';
+  b.title = on ? 'Ажырату' : 'Қосылу';
+  b.classList.toggle('on', on);
+}
+
+function renderPorts() {
+  const parts = [1, 2].map(p => `${p}: ${ports[p] ? (TYPE_NAMES[ports[p]] || '#' + ports[p]) : 'бос'}`);
+  $('ports').innerHTML = icon('plug') + '<span></span>';
+  $('ports').querySelector('span').textContent = parts.join(' · ');
+  const types = Object.values(ports);
+  if (!types.includes(TYPE.DISTANCE)) {
+    distance = null;
+    showDistance();
+  }
+  if (!types.includes(TYPE.TILT)) {
+    tilt = null;
+    showTilt();
+  }
+}
+
+function showDistance() {
+  $('distanceVal').textContent = distance === null ? '—' : distance;
+  $('distanceBar').style.width = (distance ?? 0) + '%';
+}
+
+// Scratch WeDo2 кеңейтіміндегідей: 15°-тан көп еңкейсе — сол бағыт
+function tiltDir() {
+  if (!tilt) return null;
+  const angles = { up: -tilt.y, down: tilt.y, left: -tilt.x, right: tilt.x };
+  const [key, a] = Object.entries(angles).sort((p, q) => q[1] - p[1])[0];
+  return a >= 15 ? key : null;
+}
+function showTilt() {
+  const key = tiltDir();
+  const t = TILT_DIRS.find(d => d.key === key);
+  $('tiltValue').innerHTML = !tilt ? '—' : t ? icon('arrow', 'ic', `transform:rotate(${t.rot}deg);color:#fff`) : '•';
+}
+
+// Датчик режимін орнату: [1, 2, port, type, mode, delta(4 байт), unit, notify]
+function inputCommand(port, type, mode, delta, unit, notify) {
+  return [1, 2, port, type, mode, delta, 0, 0, 0, unit, notify ? 1 : 0];
+}
+
+async function connect() {
+  if (!navigator.bluetooth) {
+    showError('Бұл браузер Web Bluetooth қолдамайды. Chrome немесе Edge ашыңыз.');
+    return;
+  }
+  try {
+    setStatus('Хабты іздеп жатырмын… Тізімнен таңда', 'busy');
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [DEVICE_SERVICE] }],
+      optionalServices: [IO_SERVICE],
+    });
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+
+    setStatus(`«${device.name || 'Smarthub'}» хабына қосылып жатырмын…`, 'busy');
+    const server = await device.gatt.connect();
+    const devService = await server.getPrimaryService(DEVICE_SERVICE);
+    const ioService = await server.getPrimaryService(IO_SERVICE);
+
+    inputCmdChar = await ioService.getCharacteristic(INPUT_COMMAND);
+    outputCmdChar = await ioService.getCharacteristic(OUTPUT_COMMAND);
+
+    const values = await ioService.getCharacteristic(INPUT_VALUES);
+    values.addEventListener('characteristicvaluechanged', onSensorValue);
+    await values.startNotifications();
+
+    const attached = await devService.getCharacteristic(ATTACHED_IO);
+    attached.addEventListener('characteristicvaluechanged', onAttachedIO);
+    await attached.startNotifications();
+
+    // Шамды RGB режиміне ауыстыру (mode 1, unit 0)
+    await write(inputCmdChar, inputCommand(LED_PORT, TYPE.LED, 1, 0, 0, false));
+    setLed([0, 0, 255]);
+
+    setConnectedUI(true);
+    setStatus(`«${device.name || 'Smarthub'}» қосылды!`, 'ok');
+  } catch (e) {
+    if (e.name === 'NotFoundError') showError('Хаб таңдалмады. Хабтың батырмасын басып, қайта көр.');
+    else if (e.name === 'SecurityError') showError('Қауіпсіздік қатесі: бетті localhost немесе https арқылы аш.');
+    else if (e.name === 'NetworkError') showError('Хабпен байланыс үзілді. Хабты жақындатып, қайта көр.');
+    else showError('Қосылу сәтсіз: ' + e.message);
+    if (isConnected()) device.gatt.disconnect();
+  }
+}
+
+function onDisconnected() {
+  setConnectedUI(false);
+  for (const k in ports) delete ports[k];
+  renderPorts();
+  setStatus('Хаб ажыратылды', '');
+}
+
+// Порт хабары: [portId, attached(0/1), hubIndex, type, ...]
+function onAttachedIO(event) {
+  const d = new Uint8Array(event.target.value.buffer);
+  const port = d[0];
+  if (port !== 1 && port !== 2) return; // ішкі порттарды елемейміз
+  if (d[1] === 0) {
+    delete ports[port];
+  } else {
+    ports[port] = d[3];
+    if (d[3] === TYPE.DISTANCE) {
+      // Қашықтық датчигі: mode 0 (қашықтық), delta 1, unit 1 (пайыз), хабарламалар қосулы
+      write(inputCmdChar, inputCommand(port, TYPE.DISTANCE, 0, 1, 1, true));
+    }
+    if (d[3] === TYPE.TILT) {
+      // Еңіс датчигі: mode 0 (бұрыш), delta 1, unit 0 (raw), хабарламалар қосулы
+      write(inputCmdChar, inputCommand(port, TYPE.TILT, 0, 1, 0, true));
+    }
+    if (d[3] === TYPE.MOTOR) applyMotor();
+  }
+  renderPorts();
+}
+
+// Датчик мәні: [?, portId, value...]. Еңіс: data[2] = X, data[3] = Y (таңбалы байт)
+const s8 = v => v > 127 ? v - 256 : v;
+function onSensorValue(event) {
+  const d = new Uint8Array(event.target.value.buffer);
+  const type = ports[d[1]];
+  if (type === TYPE.DISTANCE) {
+    distance = Math.min(100, d[2]);
+    showDistance();
+  } else if (type === TYPE.TILT) {
+    tilt = { x: s8(d[2]), y: s8(d[3]) };
+    showTilt();
+  }
+}
+
+// ===== Мотор, шам, дыбыс, экран =====
+let motorDir = 0;
+let motorPct = 50;
+
+// Мотор командасы: [port, 1 (MOTOR_POWER), 1 (ұзындық), power(-100..100)]
+function applyMotor() {
+  if (!isConnected()) return;
+  // WeDo 2.0 моторы 30%-дан төмен қуатта айналмайды, сондықтан 30..100 аралығына келтіреміз
+  const power = motorDir === 0 || motorPct === 0 ? 0 : motorDir * Math.round(30 + motorPct * 0.7);
+  const list = [1, 2].filter(p => ports[p] === TYPE.MOTOR);
+  if (list.length === 0 && motorDir !== 0) showError('Мотор табылмады. Моторды хабқа жалға.');
+  list.forEach(p => write(outputCmdChar, [p, 1, 1, power & 0xff]));
+}
+
+// Шам командасы: [6, 4 (WRITE_RGB), 3, r, g, b]
+function setLed(rgb) {
+  if (isConnected()) write(outputCmdChar, [LED_PORT, 4, 3, ...rgb]);
+}
+
+// Дыбыстар компьютердің динамигінен ойналады (WeDo бағдарламасындағыдай)
+let audioCtx = null;
+function tone(freq, start, dur, type = 'square', vol = 0.12, freqEnd) {
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, start);
+  if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, start + dur);
+  g.gain.setValueAtTime(vol, start);
+  g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+  osc.connect(g).connect(audioCtx.destination);
+  osc.start(start);
+  osc.stop(start + dur + 0.02);
+}
+// әр дыбыс ұзақтығын (секунд) қайтарады
+const SOUNDS = [
+  t => { tone(880, t, 0.18); return 0.2; },                                                    // 1 сигнал
+  t => { tone(660, t, 0.14, 'triangle', 0.2); tone(990, t + 0.16, 0.2, 'triangle', 0.2); return 0.4; }, // 2 дың-дон
+  t => { tone(300, t, 0.45, 'sawtooth', 0.1, 1200); return 0.5; },                             // 3 көтерілу
+  t => { tone(1200, t, 0.45, 'sawtooth', 0.1, 300); return 0.5; },                             // 4 түсу
+  t => { for (let i = 0; i < 3; i++) { tone(600, t + i * 0.4, 0.2, 'triangle', 0.2); tone(900, t + i * 0.4 + 0.2, 0.2, 'triangle', 0.2); } return 1.2; }, // 5 сирена
+  t => { tone(1600, t, 0.25, 'square', 0.08, 180); return 0.3; },                              // 6 лазер
+  t => { [523, 587, 659, 698, 784].forEach((f, i) => tone(f, t + i * 0.16, 0.15, 'triangle', 0.2)); return 0.85; }, // 7 до-ре-ми
+  t => { [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.12, i === 3 ? 0.45 : 0.11, 'square', 0.1)); return 0.9; }, // 8 жеңіс
+];
+function playSound(n) {
+  try {
+    audioCtx ??= new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return SOUNDS[n - 1](audioCtx.currentTime + 0.02);
+  } catch (e) {
+    return 0;
+  }
+}
+
+// ===== Микрофон (WeDo бағдарламасындағыдай дыбыс датчигі — компьютердің микрофоны) =====
+// Дыбыс ешқайда жіберілмейді: тек деңгей мен 6 жиілік жолағы есептеледі.
+const MIC_BANDS = [[100, 300], [300, 600], [600, 1200], [1200, 2400], [2400, 4800], [4800, 9600]]; // Гц: бастан ысқырыққа дейін
+let mic = null;        // { stream, src, analyser, freq, time }
+let micLevel = null;   // 0..10 — дауыс деңгейі
+let micBands = MIC_BANDS.map(() => 0);
+let micStarting = null;
+
+function startMic() {
+  if (mic) return Promise.resolve(true);
+  if (micStarting) return micStarting;
+  if (!navigator.mediaDevices?.getUserMedia) {
+    showError('Бұл браузерде микрофон жоқ. Бетті Chrome-да localhost арқылы аш.');
+    return Promise.resolve(false);
+  }
+  micStarting = (async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      });
+      audioCtx ??= new AudioContext();
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
+      const src = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.3;
+      src.connect(analyser); // динамикке жалғамаймыз — әйтпесе ысқырып кетеді
+      mic = { stream, src, analyser, freq: new Uint8Array(analyser.frequencyBinCount), time: new Float32Array(analyser.fftSize) };
+      return true;
+    } catch (e) {
+      showError(e.name === 'NotAllowedError'
+        ? 'Микрофонға рұқсат берілмеді. Адрес жолындағы белгіні басып, микрофонға рұқсат бер.'
+        : 'Микрофон қосылмады: ' + e.message);
+      return false;
+    } finally {
+      micStarting = null;
+      renderMic();
+    }
+  })();
+  return micStarting;
+}
+function stopMic() {
+  if (!mic) return;
+  mic.stream.getTracks().forEach(t => t.stop());
+  mic.src.disconnect();
+  mic = null;
+  micLevel = null;
+  micBands = MIC_BANDS.map(() => 0);
+  renderMic();
+}
+function readMic() {
+  if (!mic) return;
+  mic.analyser.getFloatTimeDomainData(mic.time);
+  let s = 0;
+  for (const v of mic.time) s += v * v;
+  const db = 20 * Math.log10(Math.sqrt(s / mic.time.length) || 1e-8);
+  micLevel = Math.max(0, Math.min(10, (db + 60) / 5)); // −60 дБ → 0, −10 дБ → 10
+  mic.analyser.getByteFrequencyData(mic.freq);
+  const hz = audioCtx.sampleRate / 2 / mic.freq.length;
+  micBands = MIC_BANDS.map(([lo, hi]) => {
+    let sum = 0, n = 0;
+    for (let i = Math.floor(lo / hz); i < Math.min(mic.freq.length, Math.ceil(hi / hz)); i++) { sum += mic.freq[i]; n++; }
+    return n ? sum / n / 255 : 0;
+  });
+}
+function renderMic() {
+  const b = $('btnMic');
+  b.setAttribute('aria-pressed', String(!!mic));
+  b.title = mic ? 'Микрофонды өшіру' : 'Микрофонды қосу (дыбыс датчигі)';
+  b.innerHTML = mic
+    ? icon('mic') + '<span class="lvl">' + '<i></i>'.repeat(5) + '</span><b id="micVal">0</b>'
+    : icon('micOff') + '<span>Микрофон</span>';
+}
+function showMicLevel() {
+  if (!mic) return;
+  const lv = Math.round(micLevel ?? 0);
+  $('micVal').textContent = lv;
+  $('btnMic').querySelectorAll('.lvl i').forEach((el, i) => {
+    el.style.height = (4 + i * 2.5) + 'px';
+    el.classList.toggle('on', lv > i * 2);
+  });
+}
+
+function setScreen(text) {
+  $('screen').hidden = false;
+  $('screenText').textContent = text;
+}
+
+// ===== Бағдарламаны орындау =====
+const runningChains = new Set();
+let stopReq = false;
+const isRunning = () => runningChains.size > 0;
+
+function sleep(ms) {
+  return waitUntil((t0 => () => Date.now() - t0 >= ms)(Date.now()));
+}
+function waitUntil(cond) {
+  return new Promise(res => {
+    const tick = () => (stopReq || cond()) ? res() : setTimeout(tick, 40);
+    tick();
+  });
+}
+
+async function exec(b) {
+  switch (b.type) {
+    case 'fwd':    motorDir = 1; applyMotor(); break;
+    case 'back':   motorDir = -1; applyMotor(); break;
+    case 'speed':  motorPct = b.v * 10; applyMotor(); break;
+    case 'runFor':
+      if (motorDir === 0) motorDir = 1;
+      applyMotor();
+      await sleep(b.v * 1000);
+      motorDir = 0; applyMotor();
+      break;
+    case 'stop':    motorDir = 0; applyMotor(); break;
+    case 'light':   setLed(COLORS[b.v].rgb); break;
+    case 'sound':   await sleep(playSound(b.v) * 1000); break;
+    case 'display': setScreen(b.v); break;
+    case 'wait':    await sleep(b.v * 1000); break;
+    case 'near':    await waitUntil(() => distance !== null && distance < b.v); break;
+    case 'far':     await waitUntil(() => distance !== null && distance > b.v); break;
+    case 'tilt':    await waitUntil(() => tiltDir() === TILT_DIRS[b.v].key); break;
+    case 'aiWait':  await waitUntil(() => aiStableOf(b.m) === b.v); break;
+    case 'aiRecord': {
+      const m = findModel(b.m);
+      const c = m?.classes.find(x => x.name === b.v);
+      if (c) await startRecording(m, c);
+      break;
+    }
+    case 'loud':
+      if (await startMic()) await waitUntil(() => micLevel !== null && micLevel >= b.v);
+      break;
+    case 'sendMsg':
+      startChains(chains.filter(c => c.blocks[0].type === 'msgStart' && c.blocks[0].v === b.v));
+      break;
+  }
+}
+
+async function execList(list, from = 0) {
+  for (let i = from; i < list.length && !stopReq; i++) {
+    const b = list[i];
+    const el = blockEls.get(b);
+    el?.classList.add('running');
+    if (b.type === 'repeat') {
+      // v = 0 — шексіз, әйтпесе v рет
+      for (let n = 0; !stopReq && (b.v === 0 || n < b.v); n++) {
+        await execList(b.body);
+        await sleep(30);
+      }
+    } else if (b.type === 'aiIf') {
+      // соңғы 2 секундты дәл қазір тексереміз: танылса — ішіндегі блоктар орындалады, әйтпесе өткізіп жібереміз
+      const m = findModel(b.m);
+      if (m && predictNow(m)?.name === b.v) await execList(b.body);
+      else await sleep(150);
+    } else {
+      await exec(b);
+      await sleep(250); // блок жанғаны көрінсін
+    }
+    el?.classList.remove('running');
+  }
+}
+
+// Тізбектер қатар орындалады (WeDo-дағы параллель тапсырмалар)
+function startChains(list) {
+  list = list.filter(c => c && !runningChains.has(c) && c.blocks.length > 1);
+  if (list.length === 0) return false;
+  if (!isRunning()) {
+    stopReq = false;
+    $('btnRun').disabled = true;
+    if (isConnected()) setStatus('Бағдарлама жүріп жатыр', 'ok');
+    else setStatus('Хаб қосылмаған — тек көрсетілім режимі', 'busy');
+  }
+  list.forEach(async ch => {
+    runningChains.add(ch);
+    try {
+      await execList(ch.blocks, 1);
+    } finally {
+      runningChains.delete(ch);
+      if (!isRunning()) finishRun();
+    }
+  });
+  return true;
+}
+
+function finishRun() {
+  blockEls.forEach(el => el.classList.remove('running'));
+  motorDir = 0;
+  motorPct = 50;
+  applyMotor();
+  $('btnRun').disabled = false;
+  setStatus(stopReq ? 'Тоқтатылды' : 'Бағдарлама аяқталды', isConnected() ? 'ok' : '');
+}
+
+// Алаңда микрофон керек блок бар ма: «Дауыс деңгейі» немесе «Дыбыс» датчигі бар модельдің AI блогы
+function boardNeedsMic(list = null) {
+  const lists = list ? [list] : chains.map(c => c.blocks);
+  return lists.some(l => l.some(b =>
+    b.type === 'loud' ||
+    (BLOCKS[b.type].param?.kind === 'aiclass' && findModel(b.m)?.sensor === 'mic') ||
+    (isFrame(b) && boardNeedsMic(b.body))));
+}
+
+function runAll() {
+  // «Іске қос» басылғанда микрофонды бірден қосамыз — «AI танығанда» тізбектері де тыңдай бастайды
+  if (boardNeedsMic()) startMic();
+  const starts = chains.filter(c => c.blocks[0].type === 'start');
+  if (starts.length === 0) return showError('«Бастау» блогы жоқ. Оны тізбектің басына қой');
+  if (!startChains(starts)) showError('«Бастау» блогына басқа блоктарды жалға');
+}
+
+function stopAll() {
+  stopReq = true;
+  motorDir = 0;
+  applyMotor();
+}
+
+// «Пернемен бастау» блоктары
+window.addEventListener('keydown', e => {
+  if (e.repeat || e.target.closest?.('input')) return;
+  const k = e.key.toLowerCase();
+  startChains(chains.filter(c => c.blocks[0].type === 'keyStart' && c.blocks[0].v === k));
+});
+
+// ===== AI: датчиктермен тану (компьютердің өзінде, интернетсіз) =====
+// Модель — бір тапсырма, мысалы «Қол белгілері» немесе «Жер беті»: өз датчигі және өз қимылдары/заттары бар.
+// Әр 50 мс сайын датчиктер жазылады; соңғы 2 секунд (40 өлшем) — бір мысал.
+// Тану: жақын көршілер әдісі (k-NN, k = 3).
+const AI_KEY = 'wedo2-ai-v2';
+const AI_WIN = 40, AI_TICK = 50, AI_REC_MS = 2000, AI_MAX_DIST = 3;
+// өлшемдегі арналар: 0 — қашықтық, 1 — еңіс X, 2 — еңіс Y, 3 — дауыс деңгейі, 4–9 — дыбыстың 6 жиілік жолағы
+const AI_SENSORS = {
+  distance: { name: 'Қашықтық', ch: [0] },
+  tilt:     { name: 'Еңіс', ch: [1, 2] },
+  mic:      { name: 'Дыбыс', ch: [3, 4, 5, 6, 7, 8, 9] },
+  both:     { name: 'Екеуі', ch: [0, 1, 2] },
+};
+let ai = loadAI();
+const aiBuf = [];
+let aiRec = null;          // { model, cls, t0, done } — жазып жатқан мысал
+const aiLive = new Map();  // модель → { now, conf, streak, stable }
+
+function defaultAI() {
+  return {
+    active: 0,
+    models: [
+      { name: 'Қол белгілері', sensor: 'distance', classes: [
+        { name: 'Ештеңе жоқ', samples: [] }, { name: 'Қол бұлғау', samples: [] }, { name: 'Қол жақын', samples: [] }] },
+      { name: 'Жер беті', sensor: 'tilt', classes: [
+        { name: 'Тегіс', samples: [] }, { name: 'Бұдыр', samples: [] }] },
+      { name: 'Дыбыстар', sensor: 'mic', classes: [
+        { name: 'Тыныштық', samples: [] }, { name: 'Шапалақ', samples: [] }, { name: 'Ысқырық', samples: [] }] },
+    ],
+  };
+}
+function loadAI() {
+  try {
+    const s = JSON.parse(localStorage.getItem(AI_KEY));
+    if (Array.isArray(s?.models) && s.models.length > 0 && s.models.every(m =>
+      typeof m.name === 'string' && AI_SENSORS[m.sensor] && Array.isArray(m.classes) &&
+      m.classes.every(c => typeof c.name === 'string' && Array.isArray(c.samples)))) {
+      s.active = Math.min(Math.max(0, s.active | 0), s.models.length - 1);
+      return s;
+    }
+  } catch (e) {}
+  return defaultAI();
+}
+function saveAI() {
+  try { localStorage.setItem(AI_KEY, JSON.stringify(ai)); } catch (e) {}
+}
+const findModel = name => ai.models.find(m => m.name === name);
+const activeModel = () => ai.models[ai.active];
+function liveOf(m) {
+  if (!aiLive.has(m)) aiLive.set(m, { now: null, conf: 0, streak: 0, stable: null });
+  return aiLive.get(m);
+}
+// блоктар үшін: модель тұрақты түрде не танып тұр (3 рет қатарынан бірдей)
+const aiStableOf = name => { const m = findModel(name); return m ? liveOf(m).stable : null; };
+
+// модельдің датчигі қосылған ба
+const needsMic = m => m.sensor === 'mic';
+function modelReady(m) {
+  const ch = AI_SENSORS[m.sensor].ch;
+  if (ch.includes(3)) return !!mic;
+  return (ch.includes(0) && distance !== null) || (ch.includes(1) && tilt !== null);
+}
+const clamp1 = v => Math.max(-1, Math.min(1, v));
+function sensorSnapshot() {
+  return [
+    distance === null ? 0 : distance / 100,
+    tilt ? clamp1(tilt.x / 45) : 0,
+    tilt ? clamp1(tilt.y / 45) : 0,
+    micLevel === null ? 0 : micLevel / 10,
+    ...micBands,
+  ];
+}
+// Модель датчигінің әр арнасын 10 бөлікке бөлеміз: әр бөліктің орташасы (қай жаққа, қаншалықты жақын)
+// және ауытқу көлемі (қаншалықты өзгерді, дірілдеді — орташа мән оны жасырып қояды).
+function features(win, sensor) {
+  if (sensor === 'mic') return micFeatures(win);
+  const out = [];
+  for (const c of AI_SENSORS[sensor].ch) {
+    for (let s = 0; s < 10; s++) {
+      const seg = win.slice(s * 4, s * 4 + 4).map(m => m[c]);
+      out.push(seg.reduce((a, v) => a + v, 0) / 4, Math.max(...seg) - Math.min(...seg));
+    }
+  }
+  return out;
+}
+// Дыбыс 2 секундтың кез келген сәтінде шығуы мүмкін, сондықтан уақытқа тәуелсіз белгілер:
+// әр арнаның орташасы, ең үлкені, ауытқуы, өзгеру жылдамдығы + ең қатты сәттегі жиілік жолақтары
+// (шапалақта барлық жолақ, ысқырықта бір жоғары жолақ). Барлығы 34 сан.
+function micFeatures(win) {
+  const out = [];
+  for (let c = 3; c <= 9; c++) {
+    const v = win.map(m => m[c]);
+    const mean = v.reduce((a, x) => a + x, 0) / v.length;
+    const sd = Math.sqrt(v.reduce((a, x) => a + (x - mean) ** 2, 0) / v.length);
+    let change = 0;
+    for (let i = 1; i < v.length; i++) change += Math.abs(v[i] - v[i - 1]);
+    out.push(mean, Math.max(...v), sd, change / (v.length - 1));
+  }
+  const loudest = win.reduce((best, m, i) => m[3] > win[best][3] ? i : best, 0);
+  out.push(...win[loudest].slice(4, 10));
+  return out;
+}
+const dist = (a, b) => Math.sqrt(a.reduce((s, v, i) => s + (v - b[i]) ** 2, 0));
+
+function predict(m, f) {
+  const all = [];
+  m.classes.forEach(c => c.samples.forEach(s => all.push({ name: c.name, d: dist(f, s) })));
+  if (all.length === 0) return null;
+  all.sort((a, b) => a.d - b.d);
+  // ешбір мысалға ұқсамайды. Шек белгілер санына қарай өседі (дыбыста арна көп)
+  if (all[0].d > AI_MAX_DIST * Math.sqrt(f.length / 60)) return null;
+  const k = Math.min(3, all.length);
+  const votes = {};
+  all.slice(0, k).forEach(x => { votes[x.name] = (votes[x.name] || 0) + 1; });
+  const [name, v] = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
+  return { name, conf: v / k };
+}
+// соңғы 2 секундты дәл қазір тексеру
+const predictNow = m => modelReady(m) && aiBuf.length === AI_WIN ? predict(m, features(aiBuf, m.sensor)) : null;
+
+let aiTicks = 0;
+setInterval(() => {
+  readMic();
+  showMicLevel();
+  aiBuf.push(sensorSnapshot());
+  if (aiBuf.length > AI_WIN) aiBuf.shift();
+  if (aiRec && Date.now() - aiRec.t0 >= AI_REC_MS) finishRecording();
+  if (++aiTicks % 3 === 0 && !aiRec) recognize();
+  updateAiLive();
+}, AI_TICK);
+
+function recognize() {
+  ai.models.forEach(m => {
+    const L = liveOf(m);
+    const p = predictNow(m);
+    const name = p?.name ?? null;
+    L.streak = name === L.now ? L.streak + 1 : 0;
+    L.now = name;
+    L.conf = p?.conf ?? 0;
+    if (L.streak === 2 && name !== L.stable) {
+      L.stable = name;
+      if (name) startChains(chains.filter(c => c.blocks[0].type === 'aiStart' && c.blocks[0].m === m.name && c.blocks[0].v === name));
+    }
+  });
+}
+
+// Мысал жазу: 2 секундтан кейін аяқталады (терезедегі батырма да, «AI мысал жаз» блогы да осыны қолданады)
+async function startRecording(m, cls) {
+  if (aiRec) return false;
+  if (needsMic(m) && !(await startMic())) return false;
+  if (!modelReady(m)) {
+    showError(`«${m.name}» моделіне ${AI_SENSORS[m.sensor].name.toLowerCase()} датчигі керек — хабқа жалға`);
+    return false;
+  }
+  return new Promise(done => {
+    aiRec = { model: m, cls, t0: Date.now(), done };
+    renderAIList();
+  });
+}
+function finishRecording() {
+  const r = aiRec;
+  r.cls.samples.push(features(aiBuf.slice(-AI_WIN), r.model.sensor));
+  aiRec = null;
+  saveAI();
+  renderAIList();
+  r.done(true);
+}
+
+// Модель немесе қимыл атын өзгерткенде оларды қолданатын блоктар да жаңа атқа көшеді
+function eachAiBlock(list, fn) {
+  list.forEach(b => {
+    if (BLOCKS[b.type]?.param?.kind === 'aiclass') fn(b);
+    if (isFrame(b)) eachAiBlock(b.body, fn);
+  });
+}
+const allAiBlocks = fn => chains.forEach(ch => eachAiBlock(ch.blocks, fn));
+
+function uniqueName(base, taken) {
+  let n = 1;
+  while (taken.includes(`${base} ${n}`)) n++;
+  return `${base} ${n}`;
+}
+
+function renderAIModel() {
+  const m = activeModel();
+  const sel = $('aiModel');
+  sel.innerHTML = '';
+  ai.models.forEach((x, i) => {
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = `${x.name} · ${AI_SENSORS[x.sensor].name.toLowerCase()}`;
+    sel.appendChild(o);
+  });
+  sel.value = ai.active;
+  $('aiModelName').value = m.name;
+  $('aiDelModel').disabled = ai.models.length <= 1 || !!aiRec;
+  document.querySelectorAll('#aiSensorPick button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sensor === m.sensor)));
+}
+
+function renderAIList() {
+  if ($('aiPanel').hidden) return;
+  renderAIModel();
+  const m = activeModel();
+  const list = $('aiList');
+  list.innerHTML = '';
+  m.classes.forEach((c, i) => {
+    const row = document.createElement('div');
+    row.className = 'ai-row';
+    row.dataset.name = c.name;
+    const input = document.createElement('input');
+    input.id = 'ai-name-' + i;
+    input.value = c.name;
+    input.maxLength = 14;
+    input.setAttribute('aria-label', 'Қимыл немесе зат аты');
+    input.addEventListener('change', () => {
+      const to = input.value.trim();
+      if (!to || m.classes.some(o => o !== c && o.name === to)) { input.value = c.name; return; }
+      allAiBlocks(b => { if (b.m === m.name && b.v === c.name) b.v = to; });
+      c.name = to;
+      saveAI(); saveProgram(); render(); renderAIList();
+    });
+    const rec = document.createElement('button');
+    rec.className = 'btn ai-rec';
+    rec.innerHTML = icon('rec') + '<span>Жазу</span>';
+    rec.disabled = !!aiRec;
+    rec.addEventListener('click', () => startRecording(m, c));
+    const del = document.createElement('button');
+    del.className = 'btn icon-only';
+    del.innerHTML = icon('trash');
+    del.title = 'Өшіру';
+    del.setAttribute('aria-label', 'Өшіру');
+    del.disabled = m.classes.length <= 1 || !!aiRec;
+    del.addEventListener('click', () => {
+      m.classes.splice(m.classes.indexOf(c), 1);
+      saveAI(); renderAIList();
+    });
+    const count = document.createElement('div');
+    count.className = 'count';
+    count.textContent = c.samples.length === 0 ? 'Мысал жоқ' : `${c.samples.length} мысал`;
+    row.append(input, rec, del, count);
+    if (aiRec?.cls === c) {
+      const bar = document.createElement('div');
+      bar.className = 'ai-progress';
+      bar.innerHTML = '<span id="aiRecBar"></span>';
+      row.appendChild(bar);
+      count.textContent = 'Көрсет! Жазып жатыр…';
+    }
+    list.appendChild(row);
+  });
+}
+
+function updateAiLive() {
+  if ($('aiPanel').hidden) return;
+  const m = activeModel();
+  const L = liveOf(m);
+  const trained = m.classes.some(c => c.samples.length > 0);
+  const nowEl = $('aiNow');
+  nowEl.textContent = aiRec ? 'Жазып жатыр…' : L.now ?? (trained ? 'Белгісіз' : 'Әлі үйретілмеген');
+  nowEl.className = L.now && !aiRec ? '' : 'idle';
+  $('aiConf').textContent = L.now && !aiRec ? `Сенімділік ${Math.round(L.conf * 100)}%` : '';
+  const bar = $('aiRecBar');
+  if (bar && aiRec) bar.style.width = Math.min(100, (Date.now() - aiRec.t0) / AI_REC_MS * 100) + '%';
+  document.querySelectorAll('.ai-row').forEach(r => r.classList.toggle('hit', !aiRec && r.dataset.name === L.now));
+  let note, warn = true;
+  if (needsMic(m)) {
+    note = mic ? `Микрофон тыңдап тұр · деңгей ${Math.round(micLevel ?? 0)}` : 'Бұл модель микрофонды тыңдайды — жоғарыдағы «Микрофон» батырмасын бас.';
+    warn = !mic;
+  } else {
+    const need = AI_SENSORS[m.sensor].ch;
+    const missing = [];
+    if (need.includes(0) && distance === null) missing.push('қашықтық');
+    if (need.includes(1) && tilt === null) missing.push('еңіс');
+    note = missing.length ? `Бұл модельге ${missing.join(' және ')} датчигі керек — хабқа жалға.` : 'Датчик дайын.';
+    warn = missing.length > 0;
+  }
+  const s = $('aiSensors');
+  s.textContent = note;
+  s.classList.toggle('warn', warn);
+}
+
+function toggleAI(open) {
+  $('aiPanel').hidden = !open;
+  $('btnAI').setAttribute('aria-pressed', String(open));
+  if (open) renderAIList();
+}
+
+// ===== Батырмалар =====
+$('btnAI').innerHTML = icon('spark') + '<span class="txt">AI үйрету</span>';
+$('btnAI').title = 'AI үйрету';
+$('aiClose').innerHTML = icon('close');
+$('btnAI').addEventListener('click', () => toggleAI($('aiPanel').hidden));
+$('aiClose').addEventListener('click', () => toggleAI(false));
+$('aiAdd').addEventListener('click', () => {
+  const m = activeModel();
+  m.classes.push({ name: uniqueName('Қимыл', m.classes.map(c => c.name)), samples: [] });
+  saveAI();
+  renderAIList();
+});
+$('aiModel').addEventListener('change', e => {
+  ai.active = Number(e.target.value);
+  saveAI();
+  renderAIList();
+});
+$('aiModelName').addEventListener('change', e => {
+  const m = activeModel();
+  const to = e.target.value.trim();
+  if (!to || ai.models.some(o => o !== m && o.name === to)) { e.target.value = m.name; return; }
+  allAiBlocks(b => { if (b.m === m.name) b.m = to; });
+  m.name = to;
+  saveAI(); saveProgram(); render(); renderAIList();
+});
+$('aiAddModel').addEventListener('click', () => {
+  ai.models.push({ name: uniqueName('Модель', ai.models.map(m => m.name)), sensor: 'distance',
+    classes: [{ name: 'Ештеңе жоқ', samples: [] }, { name: 'Қимыл 1', samples: [] }] });
+  ai.active = ai.models.length - 1;
+  saveAI();
+  renderAIList();
+  $('aiModelName').focus();
+});
+$('aiDelModel').addEventListener('click', () => {
+  const m = activeModel();
+  if (ai.models.length <= 1 || !confirm(`«${m.name}» моделі мен оның барлық мысалдары өшеді. Жалғастырамыз ба?`)) return;
+  ai.models.splice(ai.active, 1);
+  ai.active = 0;
+  saveAI();
+  renderAIList();
+});
+document.querySelectorAll('#aiSensorPick button').forEach(btn => btn.addEventListener('click', () => {
+  const m = activeModel();
+  if (m.sensor === btn.dataset.sensor || aiRec) return;
+  // басқа датчиктің мысалдары жаңа датчикке сәйкес келмейді
+  if (m.classes.some(c => c.samples.length) && !confirm('Датчикті ауыстырсаң, бұл модельдің мысалдары өшеді. Жалғастырамыз ба?')) return;
+  m.sensor = btn.dataset.sensor;
+  m.classes.forEach(c => { c.samples = []; });
+  aiLive.delete(m);
+  saveAI();
+  renderAIList();
+  if (needsMic(m)) startMic();
+}));
+$('aiModel').addEventListener('change', () => { if (needsMic(activeModel())) startMic(); });
+$('btnMic').addEventListener('click', () => mic ? stopMic() : startMic());
+$('aiDelModel').innerHTML = icon('trash');
+$('btnRun').innerHTML = icon('play') + '<span class="txt">Іске қос</span>';
+$('btnRun').title = 'Іске қос';
+$('btnStop').innerHTML = icon('stop') + '<span class="txt">Тоқтат</span>';
+$('btnStop').title = 'Тоқтат';
+$('btnClear').innerHTML = icon('trash');
+$('trash').innerHTML = icon('trash') + 'Осында таста — блок өшіріледі';
+$('distanceChip').innerHTML = icon('radar') + '<b id="distanceVal">—</b><span class="meter"><span id="distanceBar"></span></span>';
+$('distanceChip').title = 'Қашықтық датчигі';
+$('tiltChip').innerHTML = icon('tilt') + '<b id="tiltValue">—</b>';
+$('tiltChip').title = 'Еңіс датчигі';
+setConnectedUI(false);
+renderPorts();
+renderMic();
+
+$('btnConnect').addEventListener('click', () => isConnected() ? device.gatt.disconnect() : connect());
+$('btnRun').addEventListener('click', runAll);
+$('btnStop').addEventListener('click', stopAll);
+$('btnClear').addEventListener('click', () => {
+  if (isRunning() || chains.every(c => c.blocks.length <= 1)) return;
+  if (!confirm('Алаңды толық тазалау керек пе?')) return;
+  chains = [{ x: 40, y: 60, blocks: [{ type: 'start' }] }];
+  activeChain = chains[0];
+  $('screen').hidden = true;
+  render();
+  saveProgram();
+});
+window.addEventListener('resize', () => { if (!drag) render(); });
+
+$('zoomIn').addEventListener('click', () => setZoom(zoom + 0.1));
+$('zoomOut').addEventListener('click', () => setZoom(zoom - 0.1));
+$('zoomVal').addEventListener('click', () => setZoom(1));
+// Ctrl + тышқан дөңгелегі (немесе тачпадта екі саусақпен қысу) да масштабты өзгертеді
+canvas.addEventListener('wheel', e => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  setZoom(zoom + (e.deltaY < 0 ? 0.1 : -0.1));
+}, { passive: false });
+
+renderPalette();
+setZoom(zoom);
+if (!navigator.bluetooth) {
+  showError('Бұл браузер Web Bluetooth қолдамайды. Chrome немесе Edge ашыңыз.');
+  $('btnConnect').disabled = true;
+}
+</script>
+</body>
+</html>
