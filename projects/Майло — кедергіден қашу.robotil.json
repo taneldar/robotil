@@ -1,0 +1,46 @@
+{
+  "format": "robotil",
+  "version": 1,
+  "name": "Майло — кедергіден қашу",
+  "created": 1793500000000,
+  "updated": 1793500000000,
+  "chains": [
+    { "x": 40, "y": 60, "blocks": [
+      { "type": "start" },
+      { "type": "light", "v": 3 },
+      { "type": "speed", "v": 5 },
+      { "type": "repeat", "v": 0, "body": [
+        { "type": "display", "v": "Алға!" },
+        { "type": "fwd" },
+        { "type": "near", "v": 30 },
+        { "type": "stop" },
+        { "type": "light", "v": 0 },
+        { "type": "sound", "v": 1 },
+        { "type": "display", "v": "Кедергі!" },
+        { "type": "back" },
+        { "type": "wait", "v": 1 },
+        { "type": "stop" },
+        { "type": "far", "v": 60 },
+        { "type": "light", "v": 3 }
+      ] }
+    ] },
+    { "x": 40, "y": 400, "blocks": [
+      { "type": "aiStart", "m": "Қол белгілері", "v": "Қол бұлғау" },
+      { "type": "light", "v": 6 },
+      { "type": "sound", "v": 2 },
+      { "type": "display", "v": "Сәлем!" },
+      { "type": "wait", "v": 1 },
+      { "type": "light", "v": 3 }
+    ] }
+  ],
+  "ai": {
+    "active": 0,
+    "models": [
+      { "name": "Қол белгілері", "sensor": "distance", "classes": [
+        { "name": "Ештеңе жоқ", "samples": [] },
+        { "name": "Қол бұлғау", "samples": [] },
+        { "name": "Қол жақын", "samples": [] }
+      ] }
+    ]
+  }
+}

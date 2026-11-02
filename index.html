@@ -802,6 +802,8 @@ const BLOCKS = {
   aiWait:   { cat: 'ai',     icon: 'spark',  label: 'AI танығанша', param: { kind: 'aiclass' } },
   aiIf:     { cat: 'ai',     icon: 'spark',  label: 'Егер AI таныса', param: { kind: 'aiclass' } },
   aiRecord: { cat: 'ai',     icon: 'rec',    label: 'AI мысал жаз', param: { kind: 'aiclass' } },
+  // сөз айтылғанда басталады (Chrome-ның сөз тану қызметі, интернет керек). «алға/жүр» — бірнеше нұсқа
+  voiceStart: { cat: 'ai',   icon: 'mic',    label: 'Сөз айтылғанда', hat: true, param: { kind: 'text', def: 'алға', max: 16 } },
   fwd:      { cat: 'motor',  icon: 'turn',   label: 'Мотор осылай' },
   back:     { cat: 'motor',  icon: 'turn',   label: 'Мотор анылай', flip: true },
   speed:    { cat: 'motor',  icon: 'bolt',   label: 'Қуат', param: { kind: 'num', min: 0, max: 10, def: 5 } },
@@ -814,7 +816,7 @@ const BLOCKS = {
 const PALETTE = [
   { title: 'Басқару',   color: '#f8bb3d', types: ['start', 'keyStart', 'msgStart', 'sendMsg', 'wait', 'repeat'] },
   { title: 'Датчиктер', color: '#c91a09', types: ['near', 'far', 'tilt', 'loud'] },
-  { title: 'AI',        color: '#008f9b', types: ['aiStart', 'aiWait', 'aiIf', 'aiRecord'] },
+  { title: 'AI',        color: '#008f9b', types: ['aiStart', 'aiWait', 'aiIf', 'aiRecord', 'voiceStart'] },
   { title: 'Мотор',     color: '#0055bf', types: ['fwd', 'back', 'speed', 'runFor', 'stop'] },
   { title: 'Шам',       color: '#7b3fa0', types: ['light'] },
   { title: 'Дыбыс, экран', color: '#237841', types: ['sound', 'display'] },
@@ -1761,10 +1763,12 @@ function startChains(list) {
 
 function finishRun() {
   blockEls.forEach(el => el.classList.remove('running'));
+  $('btnRun').disabled = false;
+  // AI/сөз тыңдап тұрғанда мотор айналып тұра береді: «алға» деп айтып, кейін «тоқта» деуге болады
+  if (!stopReq && aiArmed && hasAiHats()) return setStatus(listenText(), isConnected() ? 'ok' : 'busy');
   motorDir = 0;
   motorPct = 50;
   applyMotor();
-  $('btnRun').disabled = false;
   setStatus(stopReq ? 'Тоқтатылды' : 'Бағдарлама аяқталды', isConnected() ? 'ok' : '');
 }
 
@@ -1777,15 +1781,32 @@ function boardNeedsMic(list = null) {
     (isFrame(b) && boardNeedsMic(b.body))));
 }
 
+// «AI танығанда» және «Сөз айтылғанда» тізбектері тек «Іске қос» басылғаннан кейін, ■ басылғанша іске қосылады
+let aiArmed = false;
+const AI_HATS = ['aiStart', 'voiceStart'];
+const hasAiHats = () => chains.some(c => AI_HATS.includes(c.blocks[0].type) && c.blocks.length > 1);
+const voiceChains = () => chains.filter(c => c.blocks[0].type === 'voiceStart' && c.blocks.length > 1);
+const listenText = () => !voiceChains().length ? 'AI тыңдап тұр — тоқтату үшін ■'
+  : lastHeard ? `Тыңдап тұрмын · естігенім: «${lastHeard}»` : 'Тыңдап тұрмын — команда айт. Тоқтату үшін ■';
+
 function runAll() {
   // «Іске қос» басылғанда микрофонды бірден қосамыз — «AI танығанда» тізбектері де тыңдай бастайды
   if (boardNeedsMic()) startMic();
+  aiArmed = true;
+  aiLive.forEach(L => { L.fired = null; });
+  if (voiceChains().length) startVoice();
   const starts = chains.filter(c => c.blocks[0].type === 'start');
-  if (starts.length === 0) return showError('«Бастау» блогы жоқ. Оны тізбектің басына қой');
+  if (starts.length === 0) {
+    if (hasAiHats()) return setStatus(listenText(), isConnected() ? 'ok' : 'busy');
+    aiArmed = false;
+    return showError('«Бастау» блогы жоқ. Оны тізбектің басына қой');
+  }
   if (!startChains(starts)) showError('«Бастау» блогына басқа блоктарды жалға');
 }
 
 function stopAll() {
+  aiArmed = false;
+  stopVoice();
   stopReq = true;
   motorDir = 0;
   applyMotor();
@@ -1797,6 +1818,62 @@ window.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   startChains(chains.filter(c => c.blocks[0].type === 'keyStart' && c.blocks[0].v === k));
 });
+
+// ===== «Сөз айтылғанда»: Chrome-ның сөз тану қызметі (Web Speech API) =====
+// Қазақша танимыз; тіл қолдау таппаса — орысша. Қазақ әріптерін орыс әріптеріне келтіріп салыстырамыз,
+// сонда «алға» мен «алга», «тоқта» мен «токта» бірдей болады.
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const KK_FOLD = { 'ә': 'а', 'ғ': 'г', 'қ': 'к', 'ң': 'н', 'ө': 'о', 'ұ': 'у', 'ү': 'у', 'һ': 'х', 'і': 'и', 'ё': 'е' };
+const foldWord = s => s.toLowerCase().replace(/[әғқңөұүһіё]/g, ch => KK_FOLD[ch]).replace(/[^a-zа-я0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+let voice = null, voiceWanted = false, voiceLang = 'kk-KZ', lastHeard = '';
+let voiceHeard = new Map(); // нәтиже нөмірі -> осы сөйлемде іске қосылған тізбектер (бір сөз екі рет қоспасын)
+
+function startVoice() {
+  if (!SpeechRec) return showError('Бұл браузер сөзді танымайды — Google Chrome-ды қолдан');
+  voiceWanted = true;
+  if (voice) return;
+  voice = new SpeechRec();
+  voice.lang = voiceLang;
+  voice.continuous = true;
+  voice.interimResults = true; // сөз аяқталғанын күтпей, бірден орындаймыз
+  voiceHeard = new Map();
+  voice.onresult = e => {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const said = foldWord(e.results[i][0].transcript);
+      if (!said) continue;
+      lastHeard = e.results[i][0].transcript.trim();
+      if (!isRunning()) setStatus(listenText(), 'ok');
+      if (!aiArmed) continue;
+      const done = voiceHeard.get(i) ?? new Set();
+      voiceHeard.set(i, done);
+      const words = ` ${said} `;
+      const hit = voiceChains().filter(c => !done.has(c) &&
+        String(c.blocks[0].v).split('/').map(foldWord).some(w => w && words.includes(` ${w} `)));
+      hit.forEach(c => done.add(c));
+      if (hit.length) startChains(hit);
+    }
+  };
+  voice.onerror = e => {
+    if (e.error === 'language-not-supported' && voiceLang !== 'ru-RU') { voiceLang = 'ru-RU'; return; }
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      voiceWanted = false;
+      showError('Микрофонға рұқсат жоқ — адрес жолындағы белгіден рұқсат бер');
+    } else if (e.error === 'network') {
+      showError('Сөз тану үшін интернет керек');
+    }
+  };
+  // Chrome біраз үнсіздіктен кейін тыңдауды өзі тоқтатады — қайта қосамыз
+  voice.onend = () => {
+    voice = null;
+    if (voiceWanted && aiArmed) setTimeout(() => { if (voiceWanted && aiArmed) startVoice(); }, 250);
+  };
+  try { voice.start(); } catch { voice = null; }
+}
+
+function stopVoice() {
+  voiceWanted = false;
+  if (voice) { voice.onend = null; voice.abort(); voice = null; }
+}
 
 // ===== AI: датчиктермен тану (компьютердің өзінде, интернетсіз) =====
 // Модель — бір тапсырма, мысалы «Қол белгілері» немесе «Жер беті»: өз датчигі және өз қимылдары/заттары бар.
@@ -1840,7 +1917,7 @@ function saveAI() { saveProject(); }
 const findModel = name => ai.models.find(m => m.name === name);
 const activeModel = () => ai.models[ai.active];
 function liveOf(m) {
-  if (!aiLive.has(m)) aiLive.set(m, { now: null, conf: 0, streak: 0, stable: null });
+  if (!aiLive.has(m)) aiLive.set(m, { now: null, conf: 0, streak: 0, stable: null, fired: null });
   return aiLive.get(m);
 }
 // блоктар үшін: модель тұрақты түрде не танып тұр (3 рет қатарынан бірдей)
@@ -1932,7 +2009,12 @@ function recognize() {
     L.conf = p?.conf ?? 0;
     if (L.streak === 2 && name !== L.stable) {
       L.stable = name;
-      if (name) startChains(chains.filter(c => c.blocks[0].type === 'aiStart' && c.blocks[0].m === m.name && c.blocks[0].v === name));
+      // «Ештеңе танымады» (null) деген қысқа үзіліс тізбекті қайта қоспайды:
+      // сол қимыл қайта іске қосу үшін алдымен басқа қимыл танылуы керек
+      if (aiArmed && name && name !== L.fired) {
+        L.fired = name;
+        startChains(chains.filter(c => c.blocks[0].type === 'aiStart' && c.blocks[0].m === m.name && c.blocks[0].v === name));
+      }
     }
   });
 }
@@ -2210,7 +2292,7 @@ function renderHome() {
     strip.className = 'proj-strip';
     (p.chains[0]?.blocks ?? []).slice(0, 9).forEach(b => {
       const i = document.createElement('i');
-      i.style.background = isHat(b) && b.type !== 'aiStart' ? '#fe8a18' : CAT_COLORS[BLOCKS[b.type].cat];
+      i.style.background = isHat(b) && !AI_HATS.includes(b.type) ? '#fe8a18' : CAT_COLORS[BLOCKS[b.type].cat];
       strip.appendChild(i);
     });
     const name = document.createElement('div');
@@ -2349,7 +2431,10 @@ renderMic();
 
 $('btnConnect').addEventListener('click', () => isConnected() ? device.gatt.disconnect() : connect());
 $('btnRun').addEventListener('click', runAll);
-$('btnStop').addEventListener('click', stopAll);
+$('btnStop').addEventListener('click', () => {
+  stopAll();
+  if (!isRunning()) setStatus('Тоқтатылды', isConnected() ? 'ok' : '');
+});
 $('btnClear').addEventListener('click', () => {
   if (isRunning() || chains.every(c => c.blocks.length <= 1)) return;
   if (!confirm('Алаңды толық тазалау керек пе?')) return;

@@ -1,0 +1,63 @@
+{
+  "format": "robotil",
+  "version": 1,
+  "name": "Майло — дауыспен басқару",
+  "created": 1793600000000,
+  "updated": 1793600000000,
+  "chains": [
+    { "x": 40, "y": 60, "blocks": [
+      { "type": "start" },
+      { "type": "light", "v": 4 },
+      { "type": "speed", "v": 5 },
+      { "type": "sound", "v": 2 },
+      { "type": "display", "v": "Тыңдаймын" }
+    ] },
+    { "x": 40, "y": 250, "blocks": [
+      { "type": "voiceStart", "v": "алға" },
+      { "type": "fwd" },
+      { "type": "light", "v": 3 },
+      { "type": "display", "v": "Алға!" }
+    ] },
+    { "x": 40, "y": 420, "blocks": [
+      { "type": "voiceStart", "v": "артқа/арт" },
+      { "type": "back" },
+      { "type": "light", "v": 5 },
+      { "type": "display", "v": "Артқа!" }
+    ] },
+    { "x": 40, "y": 590, "blocks": [
+      { "type": "voiceStart", "v": "тоқта/стоп" },
+      { "type": "stop" },
+      { "type": "light", "v": 0 },
+      { "type": "sound", "v": 1 },
+      { "type": "display", "v": "Тоқтадым" }
+    ] },
+    { "x": 760, "y": 250, "blocks": [
+      { "type": "voiceStart", "v": "жылдам/тез" },
+      { "type": "speed", "v": 9 },
+      { "type": "display", "v": "Жылдам!" }
+    ] },
+    { "x": 760, "y": 420, "blocks": [
+      { "type": "voiceStart", "v": "баяу/ақырын" },
+      { "type": "speed", "v": 3 },
+      { "type": "display", "v": "Баяу" }
+    ] },
+    { "x": 760, "y": 590, "blocks": [
+      { "type": "voiceStart", "v": "сәлем" },
+      { "type": "light", "v": 6 },
+      { "type": "sound", "v": 2 },
+      { "type": "display", "v": "Мен Майло!" },
+      { "type": "wait", "v": 1 },
+      { "type": "light", "v": 4 }
+    ] }
+  ],
+  "ai": {
+    "active": 0,
+    "models": [
+      { "name": "Қол белгілері", "sensor": "distance", "classes": [
+        { "name": "Ештеңе жоқ", "samples": [] },
+        { "name": "Қол бұлғау", "samples": [] },
+        { "name": "Қол жақын", "samples": [] }
+      ] }
+    ]
+  }
+}
