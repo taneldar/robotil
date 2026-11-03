@@ -803,7 +803,7 @@ const BLOCKS = {
   aiIf:     { cat: 'ai',     icon: 'spark',  label: 'Егер AI таныса', param: { kind: 'aiclass' } },
   aiRecord: { cat: 'ai',     icon: 'rec',    label: 'AI мысал жаз', param: { kind: 'aiclass' } },
   // сөз айтылғанда басталады (Chrome-ның сөз тану қызметі, интернет керек). «алға/жүр» — бірнеше нұсқа
-  voiceStart: { cat: 'ai',   icon: 'mic',    label: 'Сөз айтылғанда', hat: true, param: { kind: 'text', def: 'алға', max: 16 } },
+  voiceStart: { cat: 'ai',   icon: 'mic',    label: 'Сөз айтылғанда', hat: true, param: { kind: 'text', def: 'алға', max: 40 } },
   fwd:      { cat: 'motor',  icon: 'turn',   label: 'Мотор осылай' },
   back:     { cat: 'motor',  icon: 'turn',   label: 'Мотор анылай', flip: true },
   speed:    { cat: 'motor',  icon: 'bolt',   label: 'Қуат', param: { kind: 'num', min: 0, max: 10, def: 5 } },
@@ -1825,6 +1825,21 @@ window.addEventListener('keydown', e => {
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 const KK_FOLD = { 'ә': 'а', 'ғ': 'г', 'қ': 'к', 'ң': 'н', 'ө': 'о', 'ұ': 'у', 'ү': 'у', 'һ': 'х', 'і': 'и', 'ё': 'е' };
 const foldWord = s => s.toLowerCase().replace(/[әғқңөұүһіё]/g, ch => KK_FOLD[ch]).replace(/[^a-zа-я0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+// Chrome сөзді сәл басқаша жазуы мүмкін, сондықтан кешірімдіміз: «жылдамырақ» — «жылдам»-нан басталады,
+// «салам» мен «сәлем» бір әріппен ғана өзгеше. Бірнеше сөзден тұратын команда дәл ізделеді.
+function voiceMatch(said, cmd) {
+  if (cmd.includes(' ')) return ` ${said} `.includes(` ${cmd} `);
+  return said.split(' ').some(t => t.startsWith(cmd) || (cmd.length >= 5 && t.length >= 5 && editDist(t, cmd) <= 1));
+}
+function editDist(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = row;
+  }
+  return prev[b.length];
+}
 let voice = null, voiceWanted = false, voiceLang = 'kk-KZ', lastHeard = '';
 let voiceHeard = new Map(); // нәтиже нөмірі -> осы сөйлемде іске қосылған тізбектер (бір сөз екі рет қоспасын)
 
@@ -1846,9 +1861,8 @@ function startVoice() {
       if (!aiArmed) continue;
       const done = voiceHeard.get(i) ?? new Set();
       voiceHeard.set(i, done);
-      const words = ` ${said} `;
       const hit = voiceChains().filter(c => !done.has(c) &&
-        String(c.blocks[0].v).split('/').map(foldWord).some(w => w && words.includes(` ${w} `)));
+        String(c.blocks[0].v).split('/').map(foldWord).some(w => w && voiceMatch(said, w)));
       hit.forEach(c => done.add(c));
       if (hit.length) startChains(hit);
     }
