@@ -455,6 +455,33 @@
     pointer-events: none;
   }
   #screen .cap { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #8d958f; }
+
+  /* «Сөз айтылғанда»: тыңдап тұр ма, не естіді — алыстан көрінетіндей */
+  #voiceBar {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex; align-items: center; gap: 12px;
+    max-width: min(560px, calc(100% - 28px));
+    padding: 8px 10px 8px 16px;
+    border-radius: 999px;
+    background: #121513;
+    color: #f4f6f2;
+    font-size: 15px;
+  }
+  #voiceBar[hidden] { display: none; }
+  #voiceBar .vdot { flex: none; width: 12px; height: 12px; border-radius: 50%; background: #6a726c; }
+  #voiceBar.on .vdot { background: #e3342f; animation: vpulse 1.2s ease-in-out infinite; }
+  @keyframes vpulse { 50% { opacity: .35; } }
+  #voiceHeard { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #voiceHeard b { font-size: 20px; }
+  #voiceHeard.hit b { color: #7fd88f; }
+  #voiceLang {
+    flex: none; border: 1px solid #3a403c; border-radius: 999px; background: #1f2421; color: #f4f6f2;
+    font: inherit; font-size: 13px; font-weight: 600; padding: 4px 12px; cursor: pointer;
+  }
   #screenText { font-size: 28px; font-weight: 700; word-break: break-word; }
 
   /* ---------- Блоктар: тегіс LEGO кірпіштері ---------- */
@@ -684,6 +711,7 @@
     <button id="zoomVal" title="100%-ға қайтару">100%</button>
     <button id="zoomIn" title="Үлкейту" aria-label="Үлкейту">+</button>
   </div>
+  <div id="voiceBar" hidden><span class="vdot"></span><span id="voiceHeard"></span><button id="voiceLang" title="Сөз тану тілі"></button></div>
   <div id="screen" hidden><div class="cap">Экран</div><div id="screenText"></div></div>
   <aside id="aiPanel" hidden aria-label="AI үйрету">
     <div class="ai-head"><b>AI үйрету</b><button id="aiClose" class="btn icon-only" aria-label="Жабу"></button></div>
@@ -1755,6 +1783,7 @@ function startChains(list) {
       await execList(ch.blocks, 1);
     } finally {
       runningChains.delete(ch);
+      if (voicePending.delete(ch) && aiArmed && !stopReq) return void startChains([ch]);
       if (!isRunning()) finishRun();
     }
   });
@@ -1827,9 +1856,10 @@ const KK_FOLD = { 'ә': 'а', 'ғ': 'г', 'қ': 'к', 'ң': 'н', 'ө': 'о', '�
 const foldWord = s => s.toLowerCase().replace(/[әғқңөұүһіё]/g, ch => KK_FOLD[ch]).replace(/[^a-zа-я0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 // Chrome сөзді сәл басқаша жазуы мүмкін, сондықтан кешірімдіміз: «жылдамырақ» — «жылдам»-нан басталады,
 // «салам» мен «сәлем» бір әріппен ғана өзгеше. Бірнеше сөзден тұратын команда дәл ізделеді.
-function voiceMatch(said, cmd) {
-  if (cmd.includes(' ')) return ` ${said} `.includes(` ${cmd} `);
-  return said.split(' ').some(t => t.startsWith(cmd) || (cmd.length >= 5 && t.length >= 5 && editDist(t, cmd) <= 1));
+// Сөйлемде команда неше рет айтылғанын санаймыз.
+function voiceCount(said, cmd) {
+  if (cmd.includes(' ')) return ` ${said} `.split(` ${cmd} `).length - 1;
+  return said.split(' ').filter(t => t.startsWith(cmd) || (cmd.length >= 5 && t.length >= 5 && editDist(t, cmd) <= 1)).length;
 }
 function editDist(a, b) {
   let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
@@ -1840,34 +1870,68 @@ function editDist(a, b) {
   }
   return prev[b.length];
 }
-let voice = null, voiceWanted = false, voiceLang = 'kk-KZ', lastHeard = '';
-let voiceHeard = new Map(); // нәтиже нөмірі -> осы сөйлемде іске қосылған тізбектер (бір сөз екі рет қоспасын)
+// Шулы залда қазақша нашар естілсе, орысшаға ауыстыруға болады (алаңның үстіндегі батырма)
+const VOICE_LANGS = [{ code: 'kk-KZ', name: 'ҚАЗ' }, { code: 'ru-RU', name: 'РУС' }];
+const VOICE_LANG_KEY = 'oylab-voice-lang';
+let voiceLang = 'kk-KZ';
+try { if (VOICE_LANGS.some(l => l.code === localStorage.getItem(VOICE_LANG_KEY))) voiceLang = localStorage.getItem(VOICE_LANG_KEY); } catch {}
+let voice = null, voiceWanted = false, voiceLive = false, lastHeard = '', voiceBackoff = 0;
+// нәтиже нөмірі -> (тізбек -> команда осы сөйлемде неше рет орындалды). Шу болса Chrome сөйлемді
+// ұзақ жаппайды, сондықтан бір сөйлемнің ішінде «алға» қайта айтылса да орындаймыз.
+let voiceFired = new Map();
+const voicePending = new Set();
+
+function showVoice(hit = false) {
+  $('voiceBar').hidden = !voiceWanted;
+  $('voiceBar').classList.toggle('on', voiceLive);
+  $('voiceLang').textContent = VOICE_LANGS.find(l => l.code === voiceLang).name;
+  const h = $('voiceHeard');
+  h.classList.toggle('hit', hit);
+  h.textContent = lastHeard ? 'Естідім: ' : (voiceLive ? 'Тыңдап тұрмын — команда айт' : 'Микрофон қосылып жатыр…');
+  if (lastHeard) h.appendChild(document.createElement('b')).textContent = `«${lastHeard}»`;
+}
 
 function startVoice() {
   if (!SpeechRec) return showError('Бұл браузер сөзді танымайды — Google Chrome-ды қолдан');
   voiceWanted = true;
+  showVoice();
   if (voice) return;
   voice = new SpeechRec();
   voice.lang = voiceLang;
   voice.continuous = true;
   voice.interimResults = true; // сөз аяқталғанын күтпей, бірден орындаймыз
-  voiceHeard = new Map();
+  voice.maxAlternatives = 5;   // Chrome-ның басқа болжамдарын да тексереміз
+  voiceFired = new Map();
+  voice.onstart = () => { voiceLive = true; showVoice(); };
   voice.onresult = e => {
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      const said = foldWord(e.results[i][0].transcript);
-      if (!said) continue;
+      const alts = Array.from(e.results[i], a => foldWord(a.transcript)).filter(Boolean);
+      if (!alts.length) continue;
       lastHeard = e.results[i][0].transcript.trim();
       if (!isRunning()) setStatus(listenText(), 'ok');
-      if (!aiArmed) continue;
-      const done = voiceHeard.get(i) ?? new Set();
-      voiceHeard.set(i, done);
-      const hit = voiceChains().filter(c => !done.has(c) &&
-        String(c.blocks[0].v).split('/').map(foldWord).some(w => w && voiceMatch(said, w)));
-      hit.forEach(c => done.add(c));
+      if (!aiArmed) { showVoice(); continue; }
+      const fired = voiceFired.get(i) ?? new Map();
+      voiceFired.set(i, fired);
+      let shown = null;
+      const hit = voiceChains().filter(c => {
+        const words = String(c.blocks[0].v).split('/').map(foldWord).filter(Boolean);
+        const counts = alts.map(a => words.reduce((sum, w) => sum + voiceCount(a, w), 0));
+        const n = Math.max(...counts);
+        if (n <= (fired.get(c) ?? 0)) return false;
+        fired.set(c, n);
+        // тізбек әлі орындалып жатса, біткен соң бірден қайта орындаймыз (мысалы, «тоқта» екі рет айтылды)
+        if (runningChains.has(c)) { voicePending.add(c); return false; }
+        shown ??= e.results[i][counts.indexOf(n)].transcript.trim();
+        return true;
+      });
+      if (shown) lastHeard = shown; // Chrome-ның қай болжамы команда болғанын көрсетеміз
+      showVoice(hit.length > 0);
       if (hit.length) startChains(hit);
     }
   };
   voice.onerror = e => {
+    // интернет жоқ сияқты қателерде секунд сайын ғана қайталаймыз, әйтпесе қате тоқтаусыз айнала береді
+    voiceBackoff = e.error === 'no-speech' || e.error === 'aborted' ? 0 : 1000;
     if (e.error === 'language-not-supported' && voiceLang !== 'ru-RU') { voiceLang = 'ru-RU'; return; }
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
       voiceWanted = false;
@@ -1876,18 +1940,35 @@ function startVoice() {
       showError('Сөз тану үшін интернет керек');
     }
   };
-  // Chrome біраз үнсіздіктен кейін тыңдауды өзі тоқтатады — қайта қосамыз
+  // Chrome біраз үнсіздіктен кейін тыңдауды өзі тоқтатады — бірден қайта қосамыз, үзіліс сөзді жұтып қоймасын
   voice.onend = () => {
     voice = null;
-    if (voiceWanted && aiArmed) setTimeout(() => { if (voiceWanted && aiArmed) startVoice(); }, 250);
+    voiceLive = false;
+    showVoice();
+    if (!(voiceWanted && aiArmed)) return;
+    if (voiceBackoff) setTimeout(() => { if (voiceWanted && aiArmed && !voice) startVoice(); }, voiceBackoff);
+    else startVoice();
+    voiceBackoff = 0;
   };
-  try { voice.start(); } catch { voice = null; }
+  try { voice.start(); } catch { voice = null; setTimeout(() => { if (voiceWanted && aiArmed) startVoice(); }, 200); }
 }
 
 function stopVoice() {
   voiceWanted = false;
+  voicePending.clear();
+  voiceLive = false;
+  lastHeard = '';
   if (voice) { voice.onend = null; voice.abort(); voice = null; }
+  showVoice();
 }
+
+$('voiceLang').addEventListener('click', () => {
+  const i = VOICE_LANGS.findIndex(l => l.code === voiceLang);
+  voiceLang = VOICE_LANGS[(i + 1) % VOICE_LANGS.length].code;
+  try { localStorage.setItem(VOICE_LANG_KEY, voiceLang); } catch {}
+  showVoice();
+  if (voice) voice.abort(); // onend жаңа тілмен қайта қосады
+});
 
 // ===== AI: датчиктермен тану (компьютердің өзінде, интернетсіз) =====
 // Модель — бір тапсырма, мысалы «Қол белгілері» немесе «Жер беті»: өз датчигі және өз қимылдары/заттары бар.
