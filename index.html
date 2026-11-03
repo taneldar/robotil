@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RoboTil — AI-робототехника студиясы</title>
+<title>Oylab — AI-робототехника студиясы</title>
 <meta name="description" content="LEGO WeDo 2.0 роботтарына арналған қазақ тіліндегі блоктық бағдарламалау және AI студиясы. Браузерде, интернетсіз AI.">
-<!-- LEGO, WeDo және SPIKE — LEGO Group компаниясының сауда белгілері. RoboTil — LEGO Group-пен байланысы жоқ тәуелсіз жоба. -->
+<!-- LEGO, WeDo және SPIKE — LEGO Group компаниясының сауда белгілері. Oylab — LEGO Group-пен байланысы жоқ тәуелсіз жоба. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -632,13 +632,13 @@
     <header class="home-head">
       <div class="home-brick"></div>
       <div>
-        <h1>RoboTil</h1>
+        <h1>Oylab</h1>
         <p>LEGO роботтарына арналған қазақ тіліндегі AI-робототехника студиясы</p>
       </div>
     </header>
     <div class="home-tiles">
       <button class="tile tile-new" id="homeNew"><b>Жаңа жоба</b><span>Бос алаңнан бастау</span></button>
-      <button class="tile tile-open" id="homeOpen"><b>Файлдан ашу</b><span>Компьютердегі .robotil.json жоба файлы</span></button>
+      <button class="tile tile-open" id="homeOpen"><b>Файлдан ашу</b><span>Компьютердегі .oylab.json жоба файлы</span></button>
       <button class="tile tile-example" id="homeExample"><b>Майло мысалы</b><span>Дайын бағдарлама және AI тізбегі</span></button>
     </div>
     <section class="home-list">
@@ -647,16 +647,16 @@
       <div id="homeList"></div>
     </section>
     <p class="home-note">Жобалар осы браузерде сақталады. Басқа компьютерде ашу немесе мұғалімге жіберу үшін жобаны «Жүктеп алу» батырмасымен файл етіп сақта.</p>
-    <p class="home-note">LEGO®, WeDo және SPIKE — LEGO Group сауда белгілері. RoboTil — LEGO Group-пен байланысы жоқ тәуелсіз жоба.</p>
+    <p class="home-note">LEGO®, WeDo және SPIKE — LEGO Group сауда белгілері. Oylab — LEGO Group-пен байланысы жоқ тәуелсіз жоба.</p>
   </div>
-  <input type="file" id="fileInput" accept=".json,.robotil,application/json" hidden>
+  <input type="file" id="fileInput" accept=".json,application/json" hidden>
 </section>
 
 <header class="menu">
   <button id="btnHome" class="btn icon-only" title="Жобалар" aria-label="Жобалар"></button>
   <div class="logo">
     <div class="logo-brick"></div>
-    <div class="logo-text"><b>RoboTil</b><span>WeDo 2.0 үшін AI-студия</span></div>
+    <div class="logo-text"><b>Oylab</b><span>WeDo 2.0 үшін AI-студия</span></div>
   </div>
   <input id="projName" maxlength="40" aria-label="Жоба аты" title="Жоба аты">
   <button id="btnConnect" class="btn"></button>
@@ -678,7 +678,7 @@
     <div id="sizer"><div id="board"></div></div>
     <div id="hint">Блоктарды төмендегі сөреден алаңның кез келген жеріне сүйре. Алаңды бос жерінен ұстап жылжытуға болады.</div>
   </div>
-  <p id="legal">LEGO®, WeDo және SPIKE — LEGO Group сауда белгілері. RoboTil — LEGO Group-пен байланысы жоқ тәуелсіз жоба.</p>
+  <p id="legal">LEGO®, WeDo және SPIKE — LEGO Group сауда белгілері. Oylab — LEGO Group-пен байланысы жоқ тәуелсіз жоба.</p>
   <div id="zoom">
     <button id="zoomOut" title="Кішірейту" aria-label="Кішірейту">−</button>
     <button id="zoomVal" title="100%-ға қайтару">100%</button>
@@ -2175,8 +2175,10 @@ function toggleAI(open) {
 
 // ===== Жобалар: басты бет, браузерге сақтау, файлға жүктеп алу =====
 // Жоба = { id, name, created, updated, chains, ai } — алаң да, үйретілген AI да бірге сақталады
+// ескі атауымен қалады — браузерде сақталған жобалар жоғалмасын
 const PROJECTS_KEY = 'robotil-projects';
-const FILE_FORMAT = 'robotil';
+const FILE_FORMAT = 'oylab';
+const OLD_FORMATS = ['robotil']; // жобаның бұрынғы атауымен сақталған файлдар да ашылады
 let projects = [];
 let current = null;
 
@@ -2230,7 +2232,7 @@ function openProject(p) {
   aiLive.clear();
   $('screen').hidden = true;
   $('projName').value = p.name;
-  document.title = `${p.name} — RoboTil`;
+  document.title = `${p.name} — Oylab`;
   canvas.scrollTo(0, 0);
   showHome(false);
   render();
@@ -2246,7 +2248,7 @@ function createProject(name, ch, aiData) {
 }
 
 // Файл атына жарамсыз таңбаларды алып тастаймыз
-const fileName = name => (name.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'robotil') + '.robotil.json';
+const fileName = name => (name.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'oylab') + '.oylab.json';
 function downloadProject(p) {
   if (p === current) saveProject();
   const data = { format: FILE_FORMAT, version: 1, name: p.name, created: p.created, updated: p.updated, chains: p.chains, ai: p.ai };
@@ -2263,11 +2265,11 @@ function downloadProject(p) {
 async function importFile(file) {
   try {
     const d = JSON.parse(await file.text());
-    if (d?.format !== FILE_FORMAT || !validChains(d.chains)) throw new Error('format');
-    const name = typeof d.name === 'string' && d.name.trim() ? d.name.trim().slice(0, 40) : file.name.replace(/(\.robotil)?\.json$/i, '');
+    if (![FILE_FORMAT, ...OLD_FORMATS].includes(d?.format) || !validChains(d.chains)) throw new Error('format');
+    const name = typeof d.name === 'string' && d.name.trim() ? d.name.trim().slice(0, 40) : file.name.replace(/(\.oylab|\.robotil)?\.json$/i, '');
     createProject(name, d.chains, validAI(d.ai) ? d.ai : defaultAI());
   } catch (e) {
-    alert(`«${file.name}» — RoboTil жобасының файлы емес немесе бүлінген. Жүктеп алу батырмасымен сақталған .robotil.json файлын таңда.`);
+    alert(`«${file.name}» — Oylab жобасының файлы емес немесе бүлінген. Жүктеп алу батырмасымен сақталған .oylab.json файлын таңда.`);
   }
 }
 
@@ -2365,7 +2367,7 @@ $('projName').addEventListener('change', () => {
   if (!current) return;
   current.name = $('projName').value.trim().slice(0, 40) || current.name;
   $('projName').value = current.name;
-  document.title = `${current.name} — RoboTil`;
+  document.title = `${current.name} — Oylab`;
   saveProject();
 });
 $('btnHome').innerHTML = icon('home');
