@@ -72,6 +72,9 @@
     border-bottom: 1px solid var(--line);
     position: relative;
     z-index: 3;
+    /* батырмалар экранға сыймаса, екінші қатарға түседі — «Тоқтат» ешқашан шеттен шығып кетпейді */
+    flex-wrap: wrap;
+    row-gap: 8px;
   }
   .menu > :not(#status):not(.spacer) { flex: none; }
   .logo { display: flex; align-items: center; gap: 10px; margin-right: 8px; }
@@ -129,7 +132,7 @@
   }
   .chip svg.ic { width: 16px; height: 16px; color: var(--muted); }
   .chip b { font-family: var(--font-num); font-weight: 600; font-variant-numeric: tabular-nums; }
-  #status { flex: 0 1 auto; min-width: 0; max-width: 440px; }
+  #status { flex: 0 1 auto; min-width: 140px; max-width: 440px; }
   #statusText { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #status .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--muted); }
   #status.ok .dot { background: var(--ok); }
@@ -636,18 +639,19 @@
   #trash svg { width: 28px; height: 28px; fill: #fff; }
   #tray.trash #trash { display: flex; }
 
-  @media (max-width: 1300px) {
+  @media (max-width: 1500px) {
     .logo { display: none; }
     #projName { width: 150px; }
-  }
-  @media (max-width: 1100px) {
-    .logo-text { display: none; }
     .meter { display: none; }
+  }
+  /* «Іске қос» пен «Тоқтат» жазуы қалады — бала оларды бірден табуы керек */
+  @media (max-width: 1500px) {
+    .btn:not(#btnRun):not(#btnStop) .txt { display: none; }
+    .btn:not(#btnRun):not(#btnStop) { padding: 0 10px; }
+  }
+  @media (max-width: 900px) {
     .btn .txt { display: none; }
     .btn { padding: 0 10px; }
-  }
-  @media (max-width: 640px) {
-    .menu { flex-wrap: wrap; }
   }
   @media (prefers-reduced-motion: reduce) {
     #status.busy .dot { animation: none; }
@@ -1992,6 +1996,8 @@ function stopAll() {
 // «Пернемен бастау» блоктары
 window.addEventListener('keydown', e => {
   if (e.repeat || e.target.closest?.('input')) return;
+  // Esc — кез келген жерден бәрін тоқтатады (батырма көрінбей қалса да)
+  if (e.key === 'Escape') return $('btnStop').click();
   const k = e.key.toLowerCase();
   startChains(chains.filter(c => c.blocks[0].type === 'keyStart' && c.blocks[0].v === k));
 });
@@ -2671,7 +2677,7 @@ $('aiDelModel').innerHTML = icon('trash');
 $('btnRun').innerHTML = icon('play') + '<span class="txt">Іске қос</span>';
 $('btnRun').title = 'Іске қос';
 $('btnStop').innerHTML = icon('stop') + '<span class="txt">Тоқтат</span>';
-$('btnStop').title = 'Тоқтат';
+$('btnStop').title = 'Тоқтат (Esc)';
 $('btnClear').innerHTML = icon('trash');
 $('trash').innerHTML = icon('trash') + 'Осында таста — блок өшіріледі';
 $('distanceChip').innerHTML = icon('radar') + '<b id="distanceVal">—</b><span class="meter"><span id="distanceBar"></span></span>';
