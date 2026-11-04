@@ -1,0 +1,249 @@
+{
+ "format": "oylab",
+ "version": 1,
+ "name": "Essential — дауыспен карусель",
+ "created": 1794000000000,
+ "updated": 1794000000000,
+ "chains": [
+  {
+   "x": 40,
+   "y": 60,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "light",
+     "v": 4
+    },
+    {
+     "type": "speed",
+     "v": 4
+    },
+    {
+     "type": "sound",
+     "v": 2
+    },
+    {
+     "type": "display",
+     "v": "Айт: айнал"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 230,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "айнал/алға/жүр"
+    },
+    {
+     "type": "fwd"
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Айналамын"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 400,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "керісінше/артқа"
+    },
+    {
+     "type": "back"
+    },
+    {
+     "type": "light",
+     "v": 5
+    },
+    {
+     "type": "display",
+     "v": "Керісінше"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 570,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "тоқта/стоп"
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 0
+    },
+    {
+     "type": "sound",
+     "v": 1
+    },
+    {
+     "type": "display",
+     "v": "Тоқтадым"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 740,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "рақмет/рахмет/спасибо"
+    },
+    {
+     "type": "light",
+     "v": 6
+    },
+    {
+     "type": "sound",
+     "v": 2
+    },
+    {
+     "type": "display",
+     "v": "Рақмет!"
+    },
+    {
+     "type": "wait",
+     "v": 2
+    },
+    {
+     "type": "light",
+     "v": 4
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 60,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "жылдам/тез/быстр"
+    },
+    {
+     "type": "speed",
+     "v": 9
+    },
+    {
+     "type": "display",
+     "v": "Жылдам!"
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 230,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "баяу/ақырын/медлен"
+    },
+    {
+     "type": "speed",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Баяу"
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 400,
+   "blocks": [
+    {
+     "type": "keyStart",
+     "v": "a"
+    },
+    {
+     "type": "fwd"
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Айналамын"
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 570,
+   "blocks": [
+    {
+     "type": "keyStart",
+     "v": "d"
+    },
+    {
+     "type": "back"
+    },
+    {
+     "type": "light",
+     "v": 5
+    },
+    {
+     "type": "display",
+     "v": "Керісінше"
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 740,
+   "blocks": [
+    {
+     "type": "keyStart",
+     "v": "s"
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 0
+    },
+    {
+     "type": "display",
+     "v": "Тоқтадым"
+    }
+   ]
+  }
+ ],
+ "ai": {
+  "active": 0,
+  "models": [
+   {
+    "name": "Қол белгілері",
+    "sensor": "distance",
+    "classes": [
+     {
+      "name": "Ештеңе жоқ",
+      "samples": []
+     },
+     {
+      "name": "Қол бұлғау",
+      "samples": []
+     }
+    ]
+   }
+  ]
+ }
+}

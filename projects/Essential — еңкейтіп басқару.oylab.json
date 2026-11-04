@@ -1,0 +1,205 @@
+{
+ "format": "oylab",
+ "version": 1,
+ "name": "Essential — еңкейтіп басқару",
+ "created": 1794000000000,
+ "updated": 1794000000000,
+ "chains": [
+  {
+   "x": 40,
+   "y": 60,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "light",
+     "v": 4
+    },
+    {
+     "type": "speed",
+     "v": 5
+    },
+    {
+     "type": "display",
+     "v": "Еңкейт!"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 230,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "tilt",
+       "v": 2
+      },
+      {
+       "type": "fwd"
+      },
+      {
+       "type": "light",
+       "v": 3
+      },
+      {
+       "type": "display",
+       "v": "Алға!"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 400,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "tilt",
+       "v": 0
+      },
+      {
+       "type": "back"
+      },
+      {
+       "type": "light",
+       "v": 5
+      },
+      {
+       "type": "display",
+       "v": "Артқа!"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 570,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "tilt",
+       "v": 3
+      },
+      {
+       "type": "stop"
+      },
+      {
+       "type": "speed",
+       "v": 5
+      },
+      {
+       "type": "light",
+       "v": 0
+      },
+      {
+       "type": "display",
+       "v": "Тоқта"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 740,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "tilt",
+       "v": 1
+      },
+      {
+       "type": "speed",
+       "v": 9
+      },
+      {
+       "type": "light",
+       "v": 2
+      },
+      {
+       "type": "display",
+       "v": "Жылдам!"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 60,
+   "blocks": [
+    {
+     "type": "aiStart",
+     "m": "Қимылдар",
+     "v": "Сілку"
+    },
+    {
+     "type": "light",
+     "v": 6
+    },
+    {
+     "type": "sound",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Сілкідім!"
+    },
+    {
+     "type": "runFor",
+     "v": 2
+    },
+    {
+     "type": "light",
+     "v": 4
+    }
+   ]
+  }
+ ],
+ "ai": {
+  "active": 0,
+  "models": [
+   {
+    "name": "Қимылдар",
+    "sensor": "tilt",
+    "classes": [
+     {
+      "name": "Тыныш",
+      "samples": []
+     },
+     {
+      "name": "Сілку",
+      "samples": []
+     }
+    ]
+   }
+  ]
+ }
+}
