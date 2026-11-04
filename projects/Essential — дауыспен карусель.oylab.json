@@ -243,6 +243,36 @@
       "samples": []
      }
     ]
+   },
+   {
+    "name": "Сөздер",
+    "sensor": "word",
+    "classes": [
+     {
+      "name": "айнал",
+      "samples": []
+     },
+     {
+      "name": "керісінше",
+      "samples": []
+     },
+     {
+      "name": "тоқта",
+      "samples": []
+     },
+     {
+      "name": "рақмет",
+      "samples": []
+     },
+     {
+      "name": "жылдам",
+      "samples": []
+     },
+     {
+      "name": "баяу",
+      "samples": []
+     }
+    ]
    }
   ]
  }

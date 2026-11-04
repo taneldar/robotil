@@ -409,7 +409,7 @@
   #btnMic .lvl { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
   #btnMic .lvl i { width: 3px; border-radius: 1px; background: var(--line); }
   #btnMic .lvl i.on { background: #008f9b; }
-  .ai-seg { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .ai-seg { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .ai-seg button { height: 36px; border: none; background: var(--surface); font-size: 13px; font-weight: 600; }
   .ai-seg button + button { border-left: 1px solid var(--line); }
   .ai-seg button[aria-pressed="true"] { background: #008f9b; color: #fff; }
@@ -485,6 +485,9 @@
   #voiceHeard { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #voiceHeard b { font-size: 20px; }
   #voiceHeard.hit b { color: #7fd88f; }
+  #voiceHeard .vsrc { margin-left: 8px; font-size: 13px; color: #b9c2bb; }
+  .ai-auto { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .ai-auto[hidden] { display: none; }
   #voiceLang {
     flex: none; border: 1px solid #3a403c; border-radius: 999px; background: #1f2421; color: #f4f6f2;
     font: inherit; font-size: 13px; font-weight: 600; padding: 4px 12px; cursor: pointer;
@@ -746,12 +749,15 @@
         <button data-sensor="tilt">Еңіс</button>
         <button data-sensor="mic">Дыбыс</button>
         <button data-sensor="both">Екеуі</button>
+        <button data-sensor="word">Сөз</button>
       </div>
     </div>
     <div class="ai-live"><span>Қазір таныды</span><b id="aiNow" class="idle">—</b><span id="aiConf"></span></div>
     <div id="aiSensors" class="ai-note"></div>
     <div id="aiList"></div>
+    <label id="aiAutoRow" class="ai-auto" hidden><input type="checkbox" id="aiAuto"> Google естіген сөзден өзі үйренсін</label>
     <button id="aiAdd" class="btn">+ Жаңа қимыл немесе зат</button>
+    <p id="aiWordHelp" class="ai-help" hidden>Сөздің атын команда сияқты жаз: «алға», «тоқта». «Жазу» басып, сөзді бір рет айт — әрқайсысын 3 рет. Сонда «Сөз айтылғанда» блогы Google-мен бірге сенің дауыс моделіңді де тыңдайды: интернет болмаса да, шулы залда да жұмыс істейді.</p>
     <p class="ai-help">Әрқайсысын 3–5 рет жаз. «Ештеңе жоқ» дегенге ештеңе істемей жаз — AI тыныш күйді де білуі керек.</p>
     <p class="ai-help">Бағдарламада:<br>«AI танығанда» — танылған сәтте тізбекті бастайды.<br>«AI танығанша» — танылғанша күтеді.<br>«Егер AI таныса» — ішіндегі блоктар тек танылса орындалады.<br>«AI мысал жаз» — бағдарламаның ішінде мысал жазады, мысалы Майло жүріп келе жатқанда.</p>
   </aside>
@@ -1795,7 +1801,12 @@ function startMic() {
       analyser.fftSize = 1024;
       analyser.smoothingTimeConstant = 0.3;
       src.connect(analyser); // динамикке жалғамаймыз — әйтпесе ысқырып кетеді
-      mic = { stream, src, analyser, freq: new Uint8Array(analyser.frequencyBinCount), time: new Float32Array(analyser.fftSize) };
+      // өз дауыс моделі үшін: шығысы үнсіз, тек дыбысты оқиды
+      const proc = audioCtx.createScriptProcessor(wordFrameSize(audioCtx.sampleRate), 1, 1);
+      proc.onaudioprocess = e => onMicFrame(e.inputBuffer.getChannelData(0));
+      src.connect(proc);
+      proc.connect(audioCtx.destination);
+      mic = { stream, src, analyser, proc, freq: new Uint8Array(analyser.frequencyBinCount), time: new Float32Array(analyser.fftSize) };
       return true;
     } catch (e) {
       showError(e.name === 'NotAllowedError'
@@ -1813,7 +1824,9 @@ function stopMic() {
   if (!mic) return;
   mic.stream.getTracks().forEach(t => t.stop());
   mic.src.disconnect();
+  mic.proc.disconnect();
   mic = null;
+  wordVad = wordMfcc = null;
   micLevel = null;
   micBands = MIC_BANDS.map(() => 0);
   renderMic();
@@ -1974,7 +1987,7 @@ function boardNeedsMic(list = null) {
   const lists = list ? [list] : chains.map(c => c.blocks);
   return lists.some(l => l.some(b =>
     b.type === 'loud' ||
-    (BLOCKS[b.type].param?.kind === 'aiclass' && findModel(b.m)?.sensor === 'mic') ||
+    (BLOCKS[b.type].param?.kind === 'aiclass' && needsMic(findModel(b.m))) ||
     (isFrame(b) && boardNeedsMic(b.body))));
 }
 
@@ -1993,8 +2006,18 @@ function runAll() {
   aiLive.forEach(L => { L.fired = null; });
   if (voiceChains().length) {
     // Android-та микрофонды бір уақытта тек біреу ұстай алады: дауыс деңгейі қосулы тұрса, сөз тану ештеңе естімейді
-    if (IS_ANDROID && mic && !boardNeedsMic()) stopMic();
-    startVoice();
+    ownOnly = IS_ANDROID && trainedWordModels().length > 0;
+    voiceLastFire.clear();
+    if (ownOnly) {
+      voiceWanted = true;
+      showVoice();
+      startMic().then(() => showVoice());
+    } else {
+      if (IS_ANDROID && mic && !boardNeedsMic()) stopMic();
+      startVoice();
+      // компьютерде екеуі бір уақытта тыңдайды: өз модель тану үшін де, Google-дан үйрену үшін де
+      if (!IS_ANDROID && wordModels().length) startMic();
+    }
   }
   const starts = chains.filter(c => c.blocks[0].type === 'start');
   if (starts.length === 0) {
@@ -2060,12 +2083,14 @@ const voicePending = new Set();
 
 function showVoice(hit = false) {
   $('voiceBar').hidden = !voiceWanted;
-  $('voiceBar').classList.toggle('on', voiceLive);
+  $('voiceBar').classList.toggle('on', voiceLive || (ownOnly && !!mic));
   $('voiceLang').textContent = VOICE_LANGS.find(l => l.code === voiceLang).name;
   const h = $('voiceHeard');
   h.classList.toggle('hit', hit);
-  h.textContent = lastHeard ? 'Естідім: ' : (voiceLive ? 'Тыңдап тұрмын — команда айт' : 'Микрофон қосылып жатыр…');
+  h.textContent = lastHeard ? 'Естідім: ' : (voiceLive || (ownOnly && mic) ? 'Тыңдап тұрмын — команда айт' : 'Микрофон қосылып жатыр…');
   if (lastHeard) h.appendChild(document.createElement('b')).textContent = `«${lastHeard}»`;
+  const src = { own: '🧒 өз модель', google: '🌐 Google', both: '🧒+🌐 екеуі де' }[lastSrc];
+  if (lastHeard && src) { const t = h.appendChild(document.createElement('span')); t.className = 'vsrc'; t.textContent = src; }
 }
 
 function startVoice() {
@@ -2092,19 +2117,17 @@ function startVoice() {
       voiceFired.set(i, fired);
       let shown = null;
       const hit = voiceChains().filter(c => {
-        const words = String(c.blocks[0].v).split('/').map(foldWord).filter(Boolean);
+        const words = cmdWords(c);
         const counts = alts.map(a => words.reduce((sum, w) => sum + voiceCount(a, w), 0));
         const n = Math.max(...counts);
         if (n <= (fired.get(c) ?? 0)) return false;
         fired.set(c, n);
-        // тізбек әлі орындалып жатса, біткен соң бірден қайта орындаймыз (мысалы, «тоқта» екі рет айтылды)
-        if (runningChains.has(c)) { voicePending.add(c); return false; }
-        shown ??= e.results[i][counts.indexOf(n)].transcript.trim();
+        shown ??= e.results[i][counts.indexOf(n)].transcript.trim(); // Chrome-ның қай болжамы команда болғанын көрсетеміз
         return true;
       });
-      if (shown) lastHeard = shown; // Chrome-ның қай болжамы команда болғанын көрсетеміз
-      showVoice(hit.length > 0);
-      if (hit.length) startChains(hit);
+      if (!hit.length || !fireVoice(hit, 'google', shown)) { lastSrc = ''; showVoice(false); }
+      // бір сөз ғана айтылса — өз модель сол дыбыстан үйренеді
+      if (hit.length && alts[0] && !alts[0].includes(' ')) googleHeardWord(alts[0]);
     }
   };
   voice.onerror = e => {
@@ -2140,6 +2163,9 @@ function stopVoice() {
   voicePending.clear();
   voiceLive = false;
   lastHeard = '';
+  lastSrc = '';
+  ownOnly = false;
+  learnWait = null;
   if (voice) { voice.onend = null; voice.abort(); voice = null; }
   showVoice();
 }
@@ -2152,6 +2178,241 @@ $('voiceLang').addEventListener('click', () => {
   if (voice) voice.abort(); // onend жаңа тілмен қайта қосады
 });
 
+// ===== Аралас тану: Google және баланың өз «Сөздер» моделі бір уақытта тыңдайды =====
+// Қайсысы бірінші естісе, сол орындайды; екеуі де естісе — бір рет қана. Google бір сөзді анық естіп,
+// өз модель оны әлі білмесе — сол сәттегі дыбысты өз модельге мысал етіп қосады (AI өзі үйренеді).
+let wordMfcc = null, wordVad = null, wordHopMs = 20, wordRecFrames = null, lastUtter = null, learnWait = null;
+let ownOnly = false;   // Android-та микрофонды тек біреуі ұстай алады: өз модель үйретілген болса, тек сол тыңдайды
+let lastSrc = '';      // соңғы команданы кім естіді: 'own' | 'google' | 'both'
+const VOICE_DUP_MS = 1500, WORD_LEARN_MAX_MS = 1300, WORD_AUTO_MAX = 6;
+const voiceLastFire = new Map(); // тізбек → { t, src }
+const wordModels = () => ai.models.filter(m => m.sensor === 'word');
+const trainedWordModels = () => wordModels().filter(m => m.classes.some(c => c.samples.length));
+const wordClasses = m => m.classes.map(c => ({ name: c.name, samples: c.samples.map(x => x.f ?? x) }));
+const cmdWords = c => String(c.blocks[0].v).split('/').map(foldWord).filter(Boolean);
+const sameWord = (a, b) => { a = foldWord(a); return cmdWordsMatch(a, foldWord(b)); };
+const cmdWordsMatch = (said, w) => said === w || voiceCount(said, w) > 0;
+const voiceChainsFor = word => voiceChains().filter(c => cmdWords(c).some(w => cmdWordsMatch(foldWord(word), w)));
+
+function onMicFrame(x) {
+  if (!wordMfcc || wordMfcc.n !== x.length) {
+    wordMfcc = makeMfcc(audioCtx.sampleRate, x.length);
+    wordMfcc.n = x.length;
+    wordHopMs = x.length / audioCtx.sampleRate * 1000;
+    wordVad = makeWordVad(wordHopMs, onWordHeard);
+  }
+  const f = wordMfcc(x);
+  if (wordRecFrames) wordRecFrames.push(f);
+  else wordVad(f);
+}
+
+// Бір команданы Google мен өз модель екеуі де естісе, бір рет орындаймыз
+function fireVoice(list, src, heard) {
+  const now = Date.now(), go = [];
+  let dup = false;
+  for (const c of list) {
+    const last = voiceLastFire.get(c);
+    if (last && last.src !== src && now - last.t < VOICE_DUP_MS) { dup = true; last.src = 'both'; continue; }
+    voiceLastFire.set(c, { t: now, src });
+    // тізбек әлі орындалып жатса, біткен соң бірден қайта орындаймыз (мысалы, «тоқта» екі рет айтылды)
+    if (runningChains.has(c)) { voicePending.add(c); continue; }
+    go.push(c);
+  }
+  if (go.length || dup) {
+    lastSrc = go.length ? src : 'both';
+    if (heard) lastHeard = heard;
+    showVoice(true);
+  }
+  if (go.length) startChains(go);
+  return go.length > 0 || dup;
+}
+
+// Өз модель бір сөзді естіп болды (сөзден кейін 0,3 с үнсіздік)
+function onWordHeard(s) {
+  const now = Date.now();
+  let known = null;
+  for (const m of trainedWordModels()) {
+    const r = classifyWord(wordClasses(m), s);
+    const L = liveOf(m);
+    L.now = L.stable = r.name;
+    L.conf = r.name ? Math.max(0.3, Math.min(1, 1.2 - r.d / WORD_SURE_D)) : 0;
+    L.t = now;
+    if (!r.name) continue;
+    known ??= r.name;
+    if (!aiArmed) continue;
+    startChains(chains.filter(c => c.blocks[0].type === 'aiStart' && c.blocks[0].m === m.name && c.blocks[0].v === r.name && !runningChains.has(c)));
+    if (!fireVoice(voiceChainsFor(r.name), 'own', r.name) && voiceWanted) {
+      lastHeard = r.name; lastSrc = 'own'; showVoice(false);
+    }
+  }
+  // Google бұл сөзді жаңа ғана естіген болса — осы дыбыстан үйренеміз
+  if (learnWait && now - learnWait.t < 2500) learnFrom(learnWait, s, known);
+  learnWait = null;
+  lastUtter = { s, t: now, known };
+}
+
+// Google «алға» деп анық естіді: өз модельде «алға» сөзі болса, сол дыбысты мысал етіп қосамыз
+function googleHeardWord(word) {
+  const targets = [];
+  wordModels().filter(m => m.auto !== false).forEach(m => m.classes.forEach(cls => { if (sameWord(word, cls.name)) targets.push({ m, cls }); }));
+  if (!targets.length || !mic) return;
+  const t = targets[0];
+  // Google кейде сөз біткенше-ақ жазады: өз модель сөзді әлі бөліп болмаса — күтеміз
+  if (!wordVad?.speaking && lastUtter && Date.now() - lastUtter.t < 800) { learnFrom(t, lastUtter.s, lastUtter.known); lastUtter = null; }
+  else learnWait = { ...t, t: Date.now() };
+}
+function learnFrom({ m, cls }, s, known) {
+  // ұзын сөйлем немесе өз модель басқа сөз деп таныса — үйренбейміз (қате мысал модельді бұзады)
+  if (s.length * wordHopMs > WORD_LEARN_MAX_MS || known) return;
+  cls.samples.push({ f: s, auto: true });
+  const autos = cls.samples.filter(x => x.auto);
+  if (autos.length > WORD_AUTO_MAX) cls.samples.splice(cls.samples.indexOf(autos[0]), 1);
+  saveAI();
+  renderAIList();
+}
+
+
+// ===== Өз дауыс моделі: баланың өз дауысымен үйретілген сөздер (MFCC + DTW, интернетсіз) =====
+// Микрофон дыбысы ~20 мс бөліктерге бөлінеді; әр бөліктен 12 «тембр» саны (MFCC) және дауыс күші алынады.
+// Сөз — осындай бөліктер тізбегі. Жаңа сөзді әр мысалмен салыстырамыз (DTW): баяу не тез айтылса да,
+// уақытты созып-қысып ең жақсы сәйкестікті табады.
+const WORD_MEL = 26, WORD_CEP = 12;
+let WORD_DCT = null;
+function wordFrameSize(sr) { return 2 ** Math.round(Math.log2(sr * 0.021)); }
+function makeMfcc(sr, n) {
+  const win = Float32Array.from({ length: n }, (_, i) => 0.54 - 0.46 * Math.cos(2 * Math.PI * i / (n - 1)));
+  const mel = f => 2595 * Math.log10(1 + f / 700), imel = m => 700 * (10 ** (m / 2595) - 1);
+  const lo = mel(80), hi = mel(Math.min(7600, sr / 2));
+  const bins = Array.from({ length: WORD_MEL + 2 }, (_, i) => imel(lo + (hi - lo) * i / (WORD_MEL + 1)) / sr * n);
+  const filt = Array.from({ length: WORD_MEL }, (_, k) => {
+    const [a, b, c] = [bins[k], bins[k + 1], bins[k + 2]], w = [];
+    for (let j = Math.floor(a); j <= Math.ceil(c) && j <= n / 2; j++) {
+      const v = j < b ? (j - a) / (b - a) : (c - j) / (c - b);
+      if (v > 0) w.push([j, v]);
+    }
+    return w;
+  });
+  WORD_DCT ??= Array.from({ length: WORD_CEP }, (_, i) => Float32Array.from({ length: WORD_MEL }, (_, k) => Math.cos(Math.PI * (i + 1) * (k + 0.5) / WORD_MEL)));
+
+  const re = new Float32Array(n), im = new Float32Array(n), pow = new Float32Array(n / 2 + 1);
+  const bits = Math.log2(n);
+  const rev = Uint32Array.from({ length: n }, (_, i) => { let r = 0; for (let b = 0; b < bits; b++) r |= ((i >> b) & 1) << (bits - 1 - b); return r; });
+  return x => {
+    let e = 0;
+    for (let i = 0; i < n; i++) { e += x[i] * x[i]; re[rev[i]] = x[i] * win[i]; im[rev[i]] = 0; }
+    for (let size = 2; size <= n; size *= 2) {
+      const half = size / 2, step = -2 * Math.PI / size;
+      for (let s = 0; s < n; s += size) for (let j = 0; j < half; j++) {
+        const cr = Math.cos(step * j), ci = Math.sin(step * j), a = s + j, b = a + half;
+        const tr = re[b] * cr - im[b] * ci, ti = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+      }
+    }
+    for (let j = 0; j <= n / 2; j++) pow[j] = re[j] * re[j] + im[j] * im[j];
+    const m = new Float32Array(WORD_MEL);
+    for (let k = 0; k < WORD_MEL; k++) { let s = 1e-10; for (const [j, v] of filt[k]) s += pow[j] * v; m[k] = s; }
+    return { e: 10 * Math.log10(e / n + 1e-10), m };
+  };
+}
+// Айтылған сөзді үнсіздіктен бөліп алу: ең қатты жерден 30 дБ төмен немесе шудан 10 дБ жоғары бөлік
+function trimWord(frames) {
+  if (frames.length < 5) return null;
+  const es = frames.map(f => f.e).sort((a, b) => a - b);
+  const noise = es[Math.floor(es.length * 0.2)], peak = es[es.length - 1];
+  if (peak < noise + 15 || peak < -50) return null; // ештеңе айтылмады
+  const th = Math.max(noise + 10, peak - 30);
+  let a = frames.findIndex(f => f.e > th), b = frames.length - 1;
+  while (frames[b].e <= th) b--;
+  a = Math.max(0, a - 2); b = Math.min(frames.length - 1, b + 2);
+  return b - a >= 4 ? wordSample(frames.slice(a, b + 1), noiseMel(frames.filter(f => f.e <= noise))) : null;
+}
+// Шудың орташа спектрі (сөз жоқ кездегі бөліктерден)
+function noiseMel(frames) {
+  const nm = new Float32Array(WORD_MEL);
+  frames.forEach(f => f.m.forEach((v, k) => { nm[k] += v / frames.length; }));
+  return nm;
+}
+// Сақталатын мысал: әр бөлікте 12 тембр саны (орташасы алынып тасталған — микрофон әсері кетеді) + дауыс күші
+// Шуды спектрден алып тастаймыз (сынып шуылы сөзге «жабысып» қалмасын), сосын MFCC
+function wordSample(frames, nm) {
+  const cs = frames.map(f => WORD_DCT.map(row => {
+    let s = 0;
+    for (let k = 0; k < WORD_MEL; k++) s += row[k] * Math.log(Math.max(f.m[k] - 1.5 * nm[k], f.m[k] * 0.03));
+    return s;
+  }));
+  frames = frames.map((f, i) => ({ e: f.e, c: cs[i] }));
+  const mean = new Array(WORD_CEP).fill(0);
+  frames.forEach(f => f.c.forEach((v, i) => { mean[i] += v / frames.length; }));
+  const top = Math.max(...frames.map(f => f.e));
+  return frames.map(f => [...f.c.map((v, i) => Math.round((v - mean[i]) * 10) / 10), Math.round(Math.max(-40, f.e - top) / 4 * 10) / 10]);
+}
+function dtw(a, b) {
+  const n = a.length, m = b.length;
+  if (n > m * 2.5 || m > n * 2.5) return Infinity;
+  let prev = new Float64Array(m + 1).fill(Infinity), cur = new Float64Array(m + 1);
+  prev[0] = 0;
+  for (let i = 1; i <= n; i++) {
+    cur.fill(Infinity);
+    const x = a[i - 1];
+    for (let j = 1; j <= m; j++) {
+      const y = b[j - 1];
+      let d = 0;
+      for (let k = 0; k < x.length; k++) d += (x[k] - y[k]) ** 2;
+      cur[j] = Math.sqrt(d) + Math.min(prev[j], cur[j - 1], prev[j - 1]);
+    }
+    [prev, cur] = [cur, prev];
+  }
+  return prev[m] / (n + m);
+}
+// Ең жақын сөз. Ешбір сөзге ұқсамаса немесе екі сөзге бірдей ұқсаса — null (қате орындағаннан гөрі өткізіп жіберген жақсы)
+const WORD_MAX_D = 9, WORD_MARGIN = 0.9, WORD_SURE_D = 16, WORD_SURE_MARGIN = 0.78;
+function classifyWord(classes, s) {
+  const best = classes.filter(c => c.samples.length)
+    .map(c => ({ name: c.name, d: Math.min(...c.samples.map(x => dtw(s, x))) }))
+    .sort((a, b) => a.d - b.d);
+  // жақын әрі басқалардан анық ерекше болса ғана қабылдаймыз
+  const [a, b] = best, ratio = b ? a.d / b.d : 0;
+  if (!a || !((a.d <= WORD_MAX_D && ratio <= WORD_MARGIN) || (a.d <= WORD_SURE_D && ratio <= WORD_SURE_MARGIN))) return { name: null, best };
+  return { name: best[0].name, d: best[0].d, best };
+}
+// Тыңдап тұрғанда: дауыс шудан жоғары көтерілсе — сөз басталды, 0,3 с үнсіз болса — сөз бітті
+function makeWordVad(hopMs, onWord) {
+  const startN = Math.max(2, Math.round(60 / hopMs)), endN = Math.round(300 / hopMs);
+  const maxN = Math.round(2000 / hopMs), minN = Math.round(150 / hopMs), preN = Math.round(120 / hopMs);
+  // шу деңгейі — соңғы 3 секундтағы ең тыныш 15%-дың шегі; шудың спектрі — тыныш бөліктердің орташасы
+  const hist = [], histN = Math.round(3000 / hopMs), nm = new Float32Array(WORD_MEL);
+  let noise = -60, run = 0, quiet = 0, on = false, buf = [], nmReady = false;
+  const pre = [];
+  const step = f => {
+    hist.push(f.e);
+    if (hist.length > histN) hist.shift();
+    if (hist.length % 4 === 0 || hist.length < 20) noise = [...hist].sort((a, b) => a - b)[Math.floor(hist.length * 0.15)];
+    if (!on && f.e <= noise + 3) {
+      f.m.forEach((v, k) => { nm[k] = nmReady ? nm[k] * 0.95 + v * 0.05 : v; });
+      nmReady = true;
+    }
+    if (!on) {
+      pre.push(f);
+      if (pre.length > preN + startN) pre.shift();
+      if (hist.length >= 10 && f.e > Math.max(noise + 12, -55)) {
+        if (++run >= startN) { on = step.speaking = true; buf = pre.slice(); quiet = 0; }
+      } else run = 0;
+      return;
+    }
+    buf.push(f);
+    quiet = f.e < Math.max(noise + 6, -58) ? quiet + 1 : 0;
+    if (quiet < endN && buf.length < maxN) return;
+    on = step.speaking = false; run = 0;
+    const w = buf.slice(0, buf.length - quiet + 2);
+    pre.length = 0;
+    if (w.length >= minN && w.length < maxN) onWord(wordSample(w, nm));
+  };
+  step.speaking = false;
+  return step;
+}
+
+const WORD_DEFAULT = ['алға', 'артқа', 'тоқта'];
+
 // ===== AI: датчиктермен тану (компьютердің өзінде, интернетсіз) =====
 // Модель — бір тапсырма, мысалы «Қол белгілері» немесе «Жер беті»: өз датчигі және өз қимылдары/заттары бар.
 // Әр 50 мс сайын датчиктер жазылады; соңғы 2 секунд (40 өлшем) — бір мысал.
@@ -2163,6 +2424,7 @@ const AI_SENSORS = {
   tilt:     { name: 'Еңіс', ch: [1, 2] },
   mic:      { name: 'Дыбыс', ch: [3, 4, 5, 6, 7, 8, 9] },
   both:     { name: 'Екеуі', ch: [0, 1, 2] },
+  word:     { name: 'Сөз', ch: [3] }, // өз дауыс моделі: мысалдары — сөздің MFCC тізбегі
 };
 let ai = defaultAI(); // ағымдағы жобаның AI модельдері
 const aiBuf = [];
@@ -2179,6 +2441,7 @@ function defaultAI() {
         { name: 'Тегіс', samples: [] }, { name: 'Бұдыр', samples: [] }] },
       { name: 'Дыбыстар', sensor: 'mic', classes: [
         { name: 'Тыныштық', samples: [] }, { name: 'Шапалақ', samples: [] }, { name: 'Ысқырық', samples: [] }] },
+      { name: 'Сөздер', sensor: 'word', classes: WORD_DEFAULT.map(name => ({ name, samples: [] })) },
     ],
   };
 }
@@ -2201,7 +2464,7 @@ function liveOf(m) {
 const aiStableOf = name => { const m = findModel(name); return m ? liveOf(m).stable : null; };
 
 // модельдің датчигі қосылған ба
-const needsMic = m => m.sensor === 'mic';
+const needsMic = m => m?.sensor === 'mic' || m?.sensor === 'word';
 function modelReady(m) {
   const ch = AI_SENSORS[m.sensor].ch;
   if (ch.includes(3)) return !!mic;
@@ -2263,7 +2526,8 @@ function predict(m, f) {
   return { name, conf: v / k };
 }
 // соңғы 2 секундты дәл қазір тексеру
-const predictNow = m => modelReady(m) && aiBuf.length === AI_WIN ? predict(m, features(aiBuf, m.sensor)) : null;
+const predictNow = m => m.sensor === 'word' ? (liveOf(m).now ? { name: liveOf(m).now, conf: liveOf(m).conf } : null)
+  : modelReady(m) && aiBuf.length === AI_WIN ? predict(m, features(aiBuf, m.sensor)) : null;
 
 let aiTicks = 0;
 setInterval(() => {
@@ -2279,6 +2543,8 @@ setInterval(() => {
 function recognize() {
   ai.models.forEach(m => {
     const L = liveOf(m);
+    // сөз моделі сөз біткенде таниды (onWordHeard); танығанын 2,5 с көрсетеміз
+    if (m.sensor === 'word') { if (L.now && Date.now() - L.t > 2500) L.now = L.stable = null; return; }
     const p = predictNow(m);
     const name = p?.name ?? null;
     L.streak = name === L.now ? L.streak + 1 : 0;
@@ -2306,12 +2572,18 @@ async function startRecording(m, cls) {
   }
   return new Promise(done => {
     aiRec = { model: m, cls, t0: Date.now(), done };
+    if (m.sensor === 'word') wordRecFrames = [];
     renderAIList();
   });
 }
 function finishRecording() {
   const r = aiRec;
-  r.cls.samples.push(features(aiBuf.slice(-AI_WIN), r.model.sensor));
+  if (r.model.sensor === 'word') {
+    const w = trimWord(wordRecFrames ?? []);
+    wordRecFrames = null;
+    if (w) r.cls.samples.push({ f: w });
+    else showError('Сөз естілмеді — «Жазу» басқан соң сөзді қаттырақ айт');
+  } else r.cls.samples.push(features(aiBuf.slice(-AI_WIN), r.model.sensor));
   aiRec = null;
   saveAI();
   renderAIList();
@@ -2347,6 +2619,11 @@ function renderAIModel() {
   $('aiModelName').value = m.name;
   $('aiDelModel').disabled = ai.models.length <= 1 || !!aiRec;
   document.querySelectorAll('#aiSensorPick button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sensor === m.sensor)));
+  const word = m.sensor === 'word';
+  $('aiAutoRow').hidden = !word;
+  $('aiAuto').checked = m.auto !== false;
+  $('aiWordHelp').hidden = !word;
+  $('aiAdd').textContent = word ? '+ Жаңа сөз' : '+ Жаңа қимыл немесе зат';
 }
 
 function renderAIList() {
@@ -2388,14 +2665,15 @@ function renderAIList() {
     });
     const count = document.createElement('div');
     count.className = 'count';
-    count.textContent = c.samples.length === 0 ? 'Мысал жоқ' : `${c.samples.length} мысал`;
+    const autos = c.samples.filter(x => x.auto).length;
+    count.textContent = c.samples.length === 0 ? 'Мысал жоқ' : `${c.samples.length} мысал` + (autos ? ` (${autos} — Google-дан өзі үйренді)` : '');
     row.append(input, rec, del, count);
     if (aiRec?.cls === c) {
       const bar = document.createElement('div');
       bar.className = 'ai-progress';
       bar.innerHTML = '<span id="aiRecBar"></span>';
       row.appendChild(bar);
-      count.textContent = 'Көрсет! Жазып жатыр…';
+      count.textContent = m.sensor === 'word' ? 'Айт! Жазып жатыр…' : 'Көрсет! Жазып жатыр…';
     }
     list.appendChild(row);
   });
@@ -2414,7 +2692,10 @@ function updateAiLive() {
   if (bar && aiRec) bar.style.width = Math.min(100, (Date.now() - aiRec.t0) / AI_REC_MS * 100) + '%';
   document.querySelectorAll('.ai-row').forEach(r => r.classList.toggle('hit', !aiRec && r.dataset.name === L.now));
   let note, warn = true;
-  if (needsMic(m)) {
+  if (m.sensor === 'word') {
+    note = mic ? 'Микрофон тыңдап тұр — үйретілген сөзді айтып көр' : 'Бұл модель микрофонды тыңдайды — жоғарыдағы «Микрофон» батырмасын бас.';
+    warn = !mic;
+  } else if (needsMic(m)) {
     note = mic ? `Микрофон тыңдап тұр · деңгей ${Math.round(micLevel ?? 0)}` : 'Бұл модель микрофонды тыңдайды — жоғарыдағы «Микрофон» батырмасын бас.';
     warn = !mic;
   } else {
@@ -2686,12 +2967,17 @@ document.querySelectorAll('#aiSensorPick button').forEach(btn => btn.addEventLis
   if (m.classes.some(c => c.samples.length) && !confirm('Датчикті ауыстырсаң, бұл модельдің мысалдары өшеді. Жалғастырамыз ба?')) return;
   m.sensor = btn.dataset.sensor;
   m.classes.forEach(c => { c.samples = []; });
+  // жаңа модельдің «Ештеңе жоқ», «Қимыл 1» аттарын команда сөздеріне ауыстырамыз
+  let used = false;
+  allAiBlocks(b => { if (b.m === m.name) used = true; });
+  if (m.sensor === 'word' && !used && m.classes.some(c => c.name === 'Ештеңе жоқ')) m.classes = WORD_DEFAULT.map(name => ({ name, samples: [] }));
   aiLive.delete(m);
   saveAI();
   renderAIList();
   if (needsMic(m)) startMic();
 }));
 $('aiModel').addEventListener('change', () => { if (needsMic(activeModel())) startMic(); });
+$('aiAuto').addEventListener('change', e => { activeModel().auto = e.target.checked; saveAI(); });
 $('btnMic').addEventListener('click', () => mic ? stopMic() : startMic());
 $('aiDelModel').innerHTML = icon('trash');
 $('btnRun').innerHTML = icon('play') + '<span class="txt">Іске қос</span>';

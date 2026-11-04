@@ -343,6 +343,44 @@
       "samples": []
      }
     ]
+   },
+   {
+    "name": "Сөздер",
+    "sensor": "word",
+    "classes": [
+     {
+      "name": "алға",
+      "samples": []
+     },
+     {
+      "name": "артқа",
+      "samples": []
+     },
+     {
+      "name": "оңға",
+      "samples": []
+     },
+     {
+      "name": "солға",
+      "samples": []
+     },
+     {
+      "name": "тоқта",
+      "samples": []
+     },
+     {
+      "name": "сәлем",
+      "samples": []
+     },
+     {
+      "name": "жылдам",
+      "samples": []
+     },
+     {
+      "name": "баяу",
+      "samples": []
+     }
+    ]
    }
   ]
  }

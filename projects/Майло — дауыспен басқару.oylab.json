@@ -214,6 +214,40 @@
       "samples": []
      }
     ]
+   },
+   {
+    "name": "Сөздер",
+    "sensor": "word",
+    "classes": [
+     {
+      "name": "алға",
+      "samples": []
+     },
+     {
+      "name": "артқа",
+      "samples": []
+     },
+     {
+      "name": "тоқта",
+      "samples": []
+     },
+     {
+      "name": "жылдам",
+      "samples": []
+     },
+     {
+      "name": "баяу",
+      "samples": []
+     },
+     {
+      "name": "сәлем",
+      "samples": []
+     },
+     {
+      "name": "рақмет",
+      "samples": []
+     }
+    ]
    }
   ]
  }
