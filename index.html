@@ -400,6 +400,8 @@
   .ai-model .btn { min-height: 38px; }
   /* микрофон: басып қосу/өшіру, қосулы кезде дауыс деңгейі 0–10 */
   #btnMic { border: none; cursor: pointer; }
+  #hubKind { border: none; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #hubKind:disabled { cursor: default; opacity: .7; }
   #btnMic[aria-pressed="true"] svg.ic { color: #008f9b; }
   #btnMic .lvl { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
   #btnMic .lvl i { width: 3px; border-radius: 1px; background: var(--line); }
@@ -688,6 +690,10 @@
     <div class="logo-text"><b>Oylab</b><span>WeDo 2.0 үшін AI-студия</span></div>
   </div>
   <input id="projName" maxlength="40" aria-label="Жоба аты" title="Жоба аты">
+  <select id="hubKind" class="chip" title="Қай жиынтыққа қосыламыз" aria-label="Жиынтық">
+    <option value="wedo">WeDo 2.0</option>
+    <option value="essential">SPIKE Essential</option>
+  </select>
   <button id="btnConnect" class="btn"></button>
   <div class="chip" id="status"><span class="dot"></span><span id="statusText">Қосылмаған</span></div>
   <div class="spacer"></div>
@@ -760,7 +766,6 @@ const OUTPUT_COMMAND = '00001565-1212-efde-1523-785feabcd123'; // мотор / �
 
 const TYPE = { MOTOR: 1, TILT: 34, DISTANCE: 35, LED: 23 };
 const LED_PORT = 6;
-const TYPE_NAMES = { 1: 'мотор', 34: 'еңіс', 35: 'қашықтық' };
 
 const COLORS = [
   { name: 'Қызыл',    rgb: [255, 0, 0] },
@@ -1395,15 +1400,25 @@ function onTap(d) {
   }
 }
 
-// ===== Хабқа қосылу =====
-let device = null;
-let inputCmdChar = null;
-let outputCmdChar = null;
-const ports = {}; // portId -> type
+// ===== Хабтар =====
+// Әр хаб түрінің өз «драйвері» бар: өз Bluetooth тілі, өз порттары. Блоктар хабтың түрін білмейді —
+// мотор командасы қосылған барлық хабтардың моторларына барады, датчик мәні кез келген хабтан келеді.
+// hubs — тізім: қазір бір хаб қосамыз, бірақ болашақта WeDo мен Essential-ды бірге қосуға дайын.
+const hubs = [];
 let distance = null;
-let tilt = null; // { x, y } — градус
+let tilt = null;  // { x, y } — градус
+let color = null; // түс датчигі: LEGO түс нөмірі 0–10, ештеңе көрмесе -1
 
-const isConnected = () => !!(device && device.gatt.connected);
+const isConnected = () => hubs.some(h => h.connected());
+const DEVICE_NAMES = { motor: 'мотор', tilt: 'еңіс', distance: 'қашықтық', color: 'түс', matrix: 'матрица' };
+const LEGO_COLOR_NAMES = ['қара', 'қызғылт', 'күлгін', 'көк', 'көгілдір', 'көкшіл', 'жасыл', 'сары', 'сарғыш', 'қызыл', 'ақ'];
+const HUB_KINDS = {
+  wedo:      { name: 'WeDo 2.0', ports: ['1', '2'], make: () => wedoHub() },
+  essential: { name: 'SPIKE Essential', ports: ['A', 'B'], make: () => essentialHub() },
+};
+const HUB_KIND_KEY = 'oylab-hub';
+let hubKind = 'wedo';
+try { if (HUB_KINDS[localStorage.getItem(HUB_KIND_KEY)]) hubKind = localStorage.getItem(HUB_KIND_KEY); } catch {}
 
 // GATT бір уақытта тек бір операцияны қабылдайды, сондықтан жазуларды кезекке қоямыз
 let writeQueue = Promise.resolve();
@@ -1426,21 +1441,37 @@ function setConnectedUI(on) {
   b.innerHTML = on ? icon('close') + '<span class="txt">Ажырату</span>' : icon('bt') + '<span class="txt">Қосылу</span>';
   b.title = on ? 'Ажырату' : 'Қосылу';
   b.classList.toggle('on', on);
+  $('hubKind').disabled = on;
+}
+
+function renderHubKind() {
+  $('hubKind').value = hubKind;
+  document.querySelector('.logo-text span').textContent = `${HUB_KINDS[hubKind].name} үшін AI-студия`;
+  renderPorts();
 }
 
 function renderPorts() {
-  const parts = [1, 2].map(p => `${p}: ${ports[p] ? (TYPE_NAMES[ports[p]] || '#' + ports[p]) : 'бос'}`);
+  const deviceName = (h, p) => {
+    const k = h.ports[p];
+    if (!k) return 'бос';
+    if (k === 'color' && color !== null) return `түс (${color >= 0 ? LEGO_COLOR_NAMES[color] : '—'})`;
+    return DEVICE_NAMES[k] || '#' + k;
+  };
+  const parts = hubs.length
+    ? hubs.flatMap(h => h.portIds.map(p => `${h.portName(p)}: ${deviceName(h, p)}`))
+    : HUB_KINDS[hubKind].ports.map(p => `${p}: бос`);
   $('ports').innerHTML = icon('plug') + '<span></span>';
   $('ports').querySelector('span').textContent = parts.join(' · ');
-  const types = Object.values(ports);
-  if (!types.includes(TYPE.DISTANCE)) {
+  const kinds = hubs.flatMap(h => h.kinds());
+  if (!kinds.includes('distance')) {
     distance = null;
     showDistance();
   }
-  if (!types.includes(TYPE.TILT)) {
+  if (!kinds.includes('tilt')) {
     tilt = null;
     showTilt();
   }
+  if (!kinds.includes('color')) color = null;
 }
 
 function showDistance() {
@@ -1461,115 +1492,226 @@ function showTilt() {
   $('tiltValue').innerHTML = !tilt ? '—' : t ? icon('arrow', 'ic', `transform:rotate(${t.rot}deg);color:#fff`) : '•';
 }
 
-// Датчик режимін орнату: [1, 2, port, type, mode, delta(4 байт), unit, notify]
-function inputCommand(port, type, mode, delta, unit, notify) {
-  return [1, 2, port, type, mode, delta, 0, 0, 0, unit, notify ? 1 : 0];
-}
-
 async function connect() {
   if (!navigator.bluetooth) {
     showError('Бұл браузер Web Bluetooth қолдамайды. Chrome немесе Edge ашыңыз.');
     return;
   }
+  const kind = HUB_KINDS[hubKind];
+  const hub = kind.make();
   try {
-    setStatus('Хабты іздеп жатырмын… Тізімнен таңда', 'busy');
-    device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [DEVICE_SERVICE] }],
-      optionalServices: [IO_SERVICE],
-    });
-    device.addEventListener('gattserverdisconnected', onDisconnected);
-
-    setStatus(`«${device.name || 'Smarthub'}» хабына қосылып жатырмын…`, 'busy');
-    const server = await device.gatt.connect();
-    const devService = await server.getPrimaryService(DEVICE_SERVICE);
-    const ioService = await server.getPrimaryService(IO_SERVICE);
-
-    inputCmdChar = await ioService.getCharacteristic(INPUT_COMMAND);
-    outputCmdChar = await ioService.getCharacteristic(OUTPUT_COMMAND);
-
-    const values = await ioService.getCharacteristic(INPUT_VALUES);
-    values.addEventListener('characteristicvaluechanged', onSensorValue);
-    await values.startNotifications();
-
-    const attached = await devService.getCharacteristic(ATTACHED_IO);
-    attached.addEventListener('characteristicvaluechanged', onAttachedIO);
-    await attached.startNotifications();
-
-    // Шамды RGB режиміне ауыстыру (mode 1, unit 0)
-    await write(inputCmdChar, inputCommand(LED_PORT, TYPE.LED, 1, 0, 0, false));
-    setLed([0, 0, 255]);
-
+    setStatus(`${kind.name} хабын іздеп жатырмын… Тізімнен таңда`, 'busy');
+    hub.device = await navigator.bluetooth.requestDevice(hub.filter);
+    hub.device.addEventListener('gattserverdisconnected', () => onDisconnected(hub));
+    setStatus(`«${hub.device.name || kind.name}» хабына қосылып жатырмын…`, 'busy');
+    hubs.push(hub);
+    await hub.open(await hub.device.gatt.connect());
     setConnectedUI(true);
-    setStatus(`«${device.name || 'Smarthub'}» қосылды!`, 'ok');
+    setStatus(`«${hub.device.name || kind.name}» қосылды!`, 'ok');
   } catch (e) {
     if (e.name === 'NotFoundError') showError('Хаб таңдалмады. Хабтың батырмасын басып, қайта көр.');
     else if (e.name === 'SecurityError') showError('Қауіпсіздік қатесі: бетті localhost немесе https арқылы аш.');
     else if (e.name === 'NetworkError') showError('Хабпен байланыс үзілді. Хабты жақындатып, қайта көр.');
     else showError('Қосылу сәтсіз: ' + e.message);
-    if (isConnected()) device.gatt.disconnect();
+    if (hub.connected()) hub.device.gatt.disconnect();
+    else forgetHub(hub);
   }
 }
 
-function onDisconnected() {
-  setConnectedUI(false);
-  for (const k in ports) delete ports[k];
+function disconnectAll() {
+  hubs.slice().forEach(h => h.device.gatt.disconnect());
+}
+
+function forgetHub(hub) {
+  const i = hubs.indexOf(hub);
+  if (i >= 0) hubs.splice(i, 1);
+  setConnectedUI(isConnected());
   renderPorts();
+}
+
+function onDisconnected(hub) {
+  forgetHub(hub);
   setStatus('Хаб ажыратылды', '');
 }
 
-// Порт хабары: [portId, attached(0/1), hubIndex, type, ...]
-function onAttachedIO(event) {
-  const d = new Uint8Array(event.target.value.buffer);
-  const port = d[0];
-  if (port !== 1 && port !== 2) return; // ішкі порттарды елемейміз
-  if (d[1] === 0) {
-    delete ports[port];
-  } else {
-    ports[port] = d[3];
-    if (d[3] === TYPE.DISTANCE) {
-      // Қашықтық датчигі: mode 0 (қашықтық), delta 1, unit 1 (пайыз), хабарламалар қосулы
-      write(inputCmdChar, inputCommand(port, TYPE.DISTANCE, 0, 1, 1, true));
-    }
-    if (d[3] === TYPE.TILT) {
-      // Еңіс датчигі: mode 0 (бұрыш), delta 1, unit 0 (raw), хабарламалар қосулы
-      write(inputCmdChar, inputCommand(port, TYPE.TILT, 0, 1, 0, true));
-    }
-    if (d[3] === TYPE.MOTOR) applyMotor();
-  }
-  renderPorts();
+const s8 = v => v > 127 ? v - 256 : v;
+
+// --- LEGO WeDo 2.0 Smarthub: бөлек сипаттамалар (порт хабарлары, датчик мәндері, командалар) ---
+// Датчик режимін орнату: [1, 2, port, type, mode, delta(4 байт), unit, notify]
+function inputCommand(port, type, mode, delta, unit, notify) {
+  return [1, 2, port, type, mode, delta, 0, 0, 0, unit, notify ? 1 : 0];
 }
 
-// Датчик мәні: [?, portId, value...]. Еңіс: data[2] = X, data[3] = Y (таңбалы байт)
-const s8 = v => v > 127 ? v - 256 : v;
-function onSensorValue(event) {
-  const d = new Uint8Array(event.target.value.buffer);
-  const type = ports[d[1]];
-  if (type === TYPE.DISTANCE) {
-    distance = Math.min(100, d[2]);
-    showDistance();
-  } else if (type === TYPE.TILT) {
-    tilt = { x: s8(d[2]), y: s8(d[3]) };
-    showTilt();
+function wedoHub() {
+  const RAW = { [TYPE.MOTOR]: 'motor', [TYPE.TILT]: 'tilt', [TYPE.DISTANCE]: 'distance' };
+  let inputCmd = null, outputCmd = null;
+  const h = {
+    kind: 'wedo', device: null, ports: {}, portIds: [1, 2],
+    filter: { filters: [{ services: [DEVICE_SERVICE] }], optionalServices: [IO_SERVICE] },
+    connected: () => !!h.device?.gatt.connected,
+    portName: p => String(p),
+    kinds: () => Object.values(h.ports),
+    motorPorts: () => h.portIds.filter(p => h.ports[p] === 'motor'),
+  };
+
+  h.open = async server => {
+    const devService = await server.getPrimaryService(DEVICE_SERVICE);
+    const ioService = await server.getPrimaryService(IO_SERVICE);
+    inputCmd = await ioService.getCharacteristic(INPUT_COMMAND);
+    outputCmd = await ioService.getCharacteristic(OUTPUT_COMMAND);
+
+    const values = await ioService.getCharacteristic(INPUT_VALUES);
+    values.addEventListener('characteristicvaluechanged', onValue);
+    await values.startNotifications();
+
+    const attached = await devService.getCharacteristic(ATTACHED_IO);
+    attached.addEventListener('characteristicvaluechanged', onAttached);
+    await attached.startNotifications();
+
+    // Шамды RGB режиміне ауыстыру (mode 1, unit 0)
+    await write(inputCmd, inputCommand(LED_PORT, TYPE.LED, 1, 0, 0, false));
+    h.setLed([0, 0, 255]);
+  };
+
+  // Порт хабары: [portId, attached(0/1), hubIndex, type, ...]
+  function onAttached(event) {
+    const d = new Uint8Array(event.target.value.buffer);
+    const port = d[0];
+    if (port !== 1 && port !== 2) return; // ішкі порттарды елемейміз
+    if (d[1] === 0) {
+      delete h.ports[port];
+    } else {
+      h.ports[port] = RAW[d[3]] ?? d[3];
+      // Қашықтық датчигі: mode 0 (қашықтық), delta 1, unit 1 (пайыз), хабарламалар қосулы
+      if (d[3] === TYPE.DISTANCE) write(inputCmd, inputCommand(port, TYPE.DISTANCE, 0, 1, 1, true));
+      // Еңіс датчигі: mode 0 (бұрыш), delta 1, unit 0 (raw), хабарламалар қосулы
+      if (d[3] === TYPE.TILT) write(inputCmd, inputCommand(port, TYPE.TILT, 0, 1, 0, true));
+      if (d[3] === TYPE.MOTOR) applyMotor();
+    }
+    renderPorts();
   }
+
+  // Датчик мәні: [?, portId, value...]. Еңіс: data[2] = X, data[3] = Y (таңбалы байт)
+  function onValue(event) {
+    const d = new Uint8Array(event.target.value.buffer);
+    const kind = h.ports[d[1]];
+    if (kind === 'distance') {
+      distance = Math.min(100, d[2]);
+      showDistance();
+    } else if (kind === 'tilt') {
+      tilt = { x: s8(d[2]), y: s8(d[3]) };
+      showTilt();
+    }
+  }
+
+  // Мотор командасы: [port, 1 (MOTOR_POWER), 1 (ұзындық), power(-100..100)]
+  // WeDo 2.0 моторы 30%-дан төмен қуатта айналмайды, сондықтан 30..100 аралығына келтіреміз
+  h.setMotor = (dir, pct) => {
+    const power = dir === 0 || pct === 0 ? 0 : dir * Math.round(30 + pct * 0.7);
+    h.motorPorts().forEach(p => write(outputCmd, [p, 1, 1, power & 0xff]));
+  };
+  // Шам командасы: [6, 4 (WRITE_RGB), 3, r, g, b]
+  h.setLed = rgb => { if (outputCmd) write(outputCmd, [LED_PORT, 4, 3, ...rgb]); };
+  return h;
+}
+
+// --- LEGO SPIKE Essential (Technic Small Hub): LEGO Wireless Protocol 3.0 ---
+// Бір сипаттама арқылы хабарламалар: [ұзындық, 0, түрі, ...]. Сыртқы порттар A = 0, B = 1;
+// ішкі шам мен еңіс датчигі қосылғанда хаб оларды өз нөмірлерімен өзі хабарлайды.
+const LWP_SERVICE = '00001623-1212-efde-1623-785feabcd123';
+const LWP_CHAR    = '00001624-1212-efde-1623-785feabcd123';
+const LWP_MSG = { ATTACHED_IO: 0x04, INPUT_FORMAT: 0x41, PORT_VALUE: 0x45, OUTPUT: 0x81 };
+const LWP_HUB_LED = 0x17, LWP_HUB_TILT = 0x3b;
+// Сыртқы құрылғылар: Technic моторлары, түс және қашықтық датчиктері, 3×3 шам матрицасы
+const LWP_DEVICES = {
+  0x2e: 'motor', 0x2f: 'motor', 0x30: 'motor', 0x31: 'motor', 0x41: 'motor', 0x4b: 'motor', 0x4c: 'motor',
+  0x3d: 'color', 0x3e: 'distance', 0x40: 'matrix',
+};
+
+function essentialHub() {
+  let ch = null, ledPort = null, tiltPort = null;
+  const h = {
+    kind: 'essential', device: null, ports: {}, portIds: [0, 1],
+    filter: { filters: [{ services: [LWP_SERVICE] }] },
+    connected: () => !!h.device?.gatt.connected,
+    portName: p => 'AB'[p],
+    kinds: () => [...Object.values(h.ports), ...(tiltPort !== null ? ['tilt'] : [])],
+    motorPorts: () => h.portIds.filter(p => h.ports[p] === 'motor'),
+  };
+  const send = (type, ...payload) => write(ch, [payload.length + 3, 0, type, ...payload]);
+  // Датчик режимін орнату: [port, mode, delta (4 байт), хабарлама 0/1]
+  const inputFormat = (port, mode, notify) => send(LWP_MSG.INPUT_FORMAT, port, mode, 1, 0, 0, 0, notify ? 1 : 0);
+
+  h.open = async server => {
+    const service = await server.getPrimaryService(LWP_SERVICE);
+    ch = await service.getCharacteristic(LWP_CHAR);
+    ch.addEventListener('characteristicvaluechanged', onMessage);
+    await ch.startNotifications(); // осыдан кейін хаб жалғанған құрылғыларын өзі хабарлайды
+  };
+
+  function onMessage(event) {
+    const d = new Uint8Array(event.target.value.buffer);
+    if (d[2] === LWP_MSG.ATTACHED_IO) attach(d[3], d[4], d[5] | (d[6] << 8));
+    else if (d[2] === LWP_MSG.PORT_VALUE) onValue(d[3], d);
+  }
+
+  function attach(port, event, io) {
+    if (event === 0) { // ажыратылды
+      delete h.ports[port];
+      if (port === tiltPort) tiltPort = null;
+    } else if (io === LWP_HUB_LED) {
+      ledPort = port;
+      inputFormat(port, 1, false); // RGB режимі
+      h.setLed([0, 0, 255]);
+    } else if (io === LWP_HUB_TILT) {
+      tiltPort = port;
+      inputFormat(port, 0, true);  // бұрыш, градус
+    } else if (h.portIds.includes(port)) {
+      h.ports[port] = LWP_DEVICES[io] ?? io;
+      if (h.ports[port] === 'color') inputFormat(port, 0, true); // түс нөмірі
+      if (h.ports[port] === 'motor') applyMotor();
+    }
+    renderPorts();
+  }
+
+  function onValue(port, d) {
+    if (port === tiltPort && d.length >= 10) {
+      // [z, y, x] — int16. Хабтың қай жағы «алға» екені нақты хабта тексерілуі керек
+      const v = new DataView(d.buffer);
+      tilt = { x: v.getInt16(8, true), y: v.getInt16(6, true) };
+      showTilt();
+    } else if (h.ports[port] === 'color') {
+      const c = s8(d[4]);
+      color = c >= 0 && c <= 10 ? c : -1;
+      renderPorts();
+    }
+  }
+
+  // Бұрыштық моторлар жылдамдықты өздері ұстайды (StartSpeed), сондықтан баяу қуатта да айналады.
+  // Тоқтағанда қуатты 0 етеміз — мотор еркін тоқтайды.
+  h.setMotor = (dir, pct) => {
+    const speed = dir * pct;
+    h.motorPorts().forEach(p => speed === 0
+      ? send(LWP_MSG.OUTPUT, p, 0x11, 0x51, 0x00, 0)
+      : send(LWP_MSG.OUTPUT, p, 0x11, 0x07, speed & 0xff, 100, 0));
+  };
+  h.setLed = rgb => { if (ledPort !== null) send(LWP_MSG.OUTPUT, ledPort, 0x11, 0x51, 0x01, ...rgb); };
+  return h;
 }
 
 // ===== Мотор, шам, дыбыс, экран =====
 let motorDir = 0;
 let motorPct = 50;
 
-// Мотор командасы: [port, 1 (MOTOR_POWER), 1 (ұзындық), power(-100..100)]
 function applyMotor() {
   if (!isConnected()) return;
-  // WeDo 2.0 моторы 30%-дан төмен қуатта айналмайды, сондықтан 30..100 аралығына келтіреміз
-  const power = motorDir === 0 || motorPct === 0 ? 0 : motorDir * Math.round(30 + motorPct * 0.7);
-  const list = [1, 2].filter(p => ports[p] === TYPE.MOTOR);
-  if (list.length === 0 && motorDir !== 0) showError('Мотор табылмады. Моторды хабқа жалға.');
-  list.forEach(p => write(outputCmdChar, [p, 1, 1, power & 0xff]));
+  const withMotor = hubs.filter(h => h.motorPorts().length);
+  if (withMotor.length === 0 && motorDir !== 0) showError('Мотор табылмады. Моторды хабқа жалға.');
+  withMotor.forEach(h => h.setMotor(motorDir, motorPct));
 }
 
-// Шам командасы: [6, 4 (WRITE_RGB), 3, r, g, b]
 function setLed(rgb) {
-  if (isConnected()) write(outputCmdChar, [LED_PORT, 4, 3, ...rgb]);
+  hubs.forEach(h => { if (h.connected()) h.setLed(rgb); });
 }
 
 // Дыбыстар компьютердің динамигінен ойналады (WeDo бағдарламасындағыдай)
@@ -2537,10 +2679,15 @@ $('distanceChip').title = 'Қашықтық датчигі';
 $('tiltChip').innerHTML = icon('tilt') + '<b id="tiltValue">—</b>';
 $('tiltChip').title = 'Еңіс датчигі';
 setConnectedUI(false);
-renderPorts();
+renderHubKind();
 renderMic();
 
-$('btnConnect').addEventListener('click', () => isConnected() ? device.gatt.disconnect() : connect());
+$('btnConnect').addEventListener('click', () => isConnected() ? disconnectAll() : connect());
+$('hubKind').addEventListener('change', () => {
+  hubKind = $('hubKind').value;
+  try { localStorage.setItem(HUB_KIND_KEY, hubKind); } catch {}
+  renderHubKind();
+});
 $('btnRun').addEventListener('click', runAll);
 $('btnStop').addEventListener('click', () => {
   stopAll();
