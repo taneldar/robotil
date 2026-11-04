@@ -530,6 +530,9 @@
   }
   .block .icon { width: 36px; height: 36px; fill: var(--ink); }
   .block .icon.flip { transform: scaleX(-1); }
+  .block .icon.r90 { transform: rotate(90deg); }
+  .block .icon.r180 { transform: rotate(180deg); }
+  .block .icon.r270 { transform: rotate(270deg); }
   .block .label { font-size: 11.5px; font-weight: 600; text-align: center; line-height: 1.15; padding-inline: 4px; }
   .block input, .block .pill {
     width: 58px;
@@ -848,6 +851,11 @@ const BLOCKS = {
   speed:    { cat: 'motor',  icon: 'bolt',   label: 'Қуат', param: { kind: 'num', min: 0, max: 10, def: 5 } },
   runFor:   { cat: 'motor',  icon: 'timer',  label: 'Мотор, сек', param: { kind: 'num', min: 0.5, max: 60, step: 0.5, def: 2 } },
   stop:     { cat: 'motor',  icon: 'stop',   label: 'Мотор сөн' },
+  // Көлік: екі моторлы машина. A (1) — сол дөңгелек, B (2) — оң дөңгелек
+  driveFwd:  { cat: 'motor', icon: 'arrow', label: 'Алға жүр' },
+  driveBack: { cat: 'motor', icon: 'arrow', label: 'Артқа жүр', rot: 180 },
+  turnLeft:  { cat: 'motor', icon: 'arrow', label: 'Солға бұрыл', rot: 270 },
+  turnRight: { cat: 'motor', icon: 'arrow', label: 'Оңға бұрыл', rot: 90 },
   light:    { cat: 'light',  icon: 'bulb',   label: 'Шам', param: { kind: 'color', def: 3 } },
   sound:    { cat: 'media',  icon: 'sound',  label: 'Дыбыс', param: { kind: 'num', min: 1, max: 8, def: 1 } },
   display:  { cat: 'media',  icon: 'screen', label: 'Экран', param: { kind: 'text', def: 'Сәлем!', max: 12 } },
@@ -857,6 +865,7 @@ const PALETTE = [
   { title: 'Датчиктер', color: '#c91a09', types: ['near', 'far', 'tilt', 'loud'] },
   { title: 'AI',        color: '#008f9b', types: ['aiStart', 'aiWait', 'aiIf', 'aiRecord', 'voiceStart'] },
   { title: 'Мотор',     color: '#0055bf', types: ['fwd', 'back', 'speed', 'runFor', 'stop'] },
+  { title: 'Көлік (2 мотор)', color: '#0055bf', types: ['driveFwd', 'driveBack', 'turnLeft', 'turnRight'] },
   { title: 'Шам',       color: '#7b3fa0', types: ['light'] },
   { title: 'Дыбыс, экран', color: '#237841', types: ['sound', 'display'] },
 ];
@@ -1065,7 +1074,7 @@ function makeBlockEl(b, editable, parts = 'both') {
   el.dataset.oy = 0;
   el.innerHTML = shapeSvg(geom(b), parts) +
     `<div class="studs"><i></i><i></i></div>` +
-    icon(def.icon, 'icon' + (def.flip ? ' flip' : '')) + `<div class="label"></div>`;
+    icon(def.icon, 'icon' + (def.flip ? ' flip' : '') + (def.rot ? ' r' + def.rot : '')) + `<div class="label"></div>`;
   el.querySelector('.label').textContent = def.label;
   el.append(...paramNodes(b, editable));
   return el;
@@ -1610,10 +1619,11 @@ function wedoHub() {
 
   // Мотор командасы: [port, 1 (MOTOR_POWER), 1 (ұзындық), power(-100..100)]
   // WeDo 2.0 моторы 30%-дан төмен қуатта айналмайды, сондықтан 30..100 аралығына келтіреміз
-  h.setMotor = (dir, pct) => {
+  h.setMotor = (dirOf, pct) => h.motorPorts().forEach(p => {
+    const dir = dirOf(h.portIds.indexOf(p));
     const power = dir === 0 || pct === 0 ? 0 : dir * Math.round(30 + pct * 0.7);
-    h.motorPorts().forEach(p => write(outputCmd, [p, 1, 1, power & 0xff]));
-  };
+    write(outputCmd, [p, 1, 1, power & 0xff]);
+  });
   // Шам командасы: [6, 4 (WRITE_RGB), 3, r, g, b]
   h.setLed = rgb => { if (outputCmd) write(outputCmd, [LED_PORT, 4, 3, ...rgb]); };
   return h;
@@ -1693,12 +1703,11 @@ function essentialHub() {
 
   // Бұрыштық моторлар жылдамдықты өздері ұстайды (StartSpeed), сондықтан баяу қуатта да айналады.
   // Тоқтағанда қуатты 0 етеміз — мотор еркін тоқтайды.
-  h.setMotor = (dir, pct) => {
-    const speed = dir * pct;
-    h.motorPorts().forEach(p => speed === 0
-      ? send(LWP_MSG.OUTPUT, p, 0x11, 0x51, 0x00, 0)
-      : send(LWP_MSG.OUTPUT, p, 0x11, 0x07, speed & 0xff, 100, 0));
-  };
+  h.setMotor = (dirOf, pct) => h.motorPorts().forEach(p => {
+    const speed = dirOf(h.portIds.indexOf(p)) * pct;
+    if (speed === 0) send(LWP_MSG.OUTPUT, p, 0x11, 0x51, 0x00, 0);
+    else send(LWP_MSG.OUTPUT, p, 0x11, 0x07, speed & 0xff, 100, 0);
+  });
   h.setLed = rgb => { if (ledPort !== null) send(LWP_MSG.OUTPUT, ledPort, 0x11, 0x51, 0x01, ...rgb); };
   return h;
 }
@@ -1706,12 +1715,18 @@ function essentialHub() {
 // ===== Мотор, шам, дыбыс, экран =====
 let motorDir = 0;
 let motorPct = 50;
+let drive = null; // көлік блоктары: 'fwd' | 'back' | 'left' | 'right', әйтпесе барлық мотор бірдей айналады
+
+// Көлікте моторлар бір-біріне қарама-қарсы орнатылады, сондықтан «алға» жүру үшін олар қарама-қарсы айналады.
+// [сол дөңгелек (A / 1), оң дөңгелек (B / 2)]. Машина артқа жүрсе — A мен B сымдарын ауыстырып жалға.
+const DRIVE = { fwd: [-1, 1], back: [1, -1], left: [1, 1], right: [-1, -1] };
+const motorDirFor = i => motorDir === 0 ? 0 : drive ? DRIVE[drive][i] ?? 0 : motorDir;
 
 function applyMotor() {
   if (!isConnected()) return;
   const withMotor = hubs.filter(h => h.motorPorts().length);
   if (withMotor.length === 0 && motorDir !== 0) showError('Мотор табылмады. Моторды хабқа жалға.');
-  withMotor.forEach(h => h.setMotor(motorDir, motorPct));
+  withMotor.forEach(h => h.setMotor(motorDirFor, motorPct));
 }
 
 function setLed(rgb) {
@@ -1858,8 +1873,12 @@ function waitUntil(cond) {
 
 async function exec(b) {
   switch (b.type) {
-    case 'fwd':    motorDir = 1; applyMotor(); break;
-    case 'back':   motorDir = -1; applyMotor(); break;
+    case 'fwd':    drive = null; motorDir = 1; applyMotor(); break;
+    case 'back':   drive = null; motorDir = -1; applyMotor(); break;
+    case 'driveFwd':  drive = 'fwd'; motorDir = 1; applyMotor(); break;
+    case 'driveBack': drive = 'back'; motorDir = 1; applyMotor(); break;
+    case 'turnLeft':  drive = 'left'; motorDir = 1; applyMotor(); break;
+    case 'turnRight': drive = 'right'; motorDir = 1; applyMotor(); break;
     case 'speed':  motorPct = b.v * 10; applyMotor(); break;
     case 'runFor':
       if (motorDir === 0) motorDir = 1;
@@ -1945,6 +1964,7 @@ function finishRun() {
   if (!stopReq && aiArmed && hasAiHats()) return setStatus(listenText(), isConnected() ? 'ok' : 'busy');
   motorDir = 0;
   motorPct = 50;
+  drive = null;
   applyMotor();
   setStatus(stopReq ? 'Тоқтатылды' : 'Бағдарлама аяқталды', isConnected() ? 'ok' : '');
 }

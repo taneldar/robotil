@@ -1,0 +1,349 @@
+{
+ "format": "oylab",
+ "version": 1,
+ "name": "Essential — такси",
+ "created": 1794100000000,
+ "updated": 1794100000000,
+ "chains": [
+  {
+   "x": 40,
+   "y": 60,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "light",
+     "v": 4
+    },
+    {
+     "type": "speed",
+     "v": 5
+    },
+    {
+     "type": "sound",
+     "v": 2
+    },
+    {
+     "type": "display",
+     "v": "Такси дайын"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 230,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "алға/жүр"
+    },
+    {
+     "type": "driveFwd"
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Алға!"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 400,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "артқа"
+    },
+    {
+     "type": "driveBack"
+    },
+    {
+     "type": "light",
+     "v": 5
+    },
+    {
+     "type": "display",
+     "v": "Артқа!"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 570,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "оңға/право/направо"
+    },
+    {
+     "type": "turnRight"
+    },
+    {
+     "type": "wait",
+     "v": 0.5
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 2
+    },
+    {
+     "type": "display",
+     "v": "Оңға"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 740,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "солға/лево/налево"
+    },
+    {
+     "type": "turnLeft"
+    },
+    {
+     "type": "wait",
+     "v": 0.5
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 2
+    },
+    {
+     "type": "display",
+     "v": "Солға"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 910,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "тоқта/стоп"
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 0
+    },
+    {
+     "type": "sound",
+     "v": 1
+    },
+    {
+     "type": "display",
+     "v": "Тоқтадым"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1080,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "сәлем/привет"
+    },
+    {
+     "type": "light",
+     "v": 6
+    },
+    {
+     "type": "sound",
+     "v": 2
+    },
+    {
+     "type": "display",
+     "v": "Такси келді!"
+    },
+    {
+     "type": "wait",
+     "v": 1
+    },
+    {
+     "type": "light",
+     "v": 4
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 60,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "жылдам/тез/быстр"
+    },
+    {
+     "type": "speed",
+     "v": 8
+    },
+    {
+     "type": "display",
+     "v": "Жылдам!"
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 230,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "баяу/ақырын/медлен"
+    },
+    {
+     "type": "speed",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Баяу"
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 400,
+   "blocks": [
+    {
+     "type": "keyStart",
+     "v": "w"
+    },
+    {
+     "type": "driveFwd"
+    },
+    {
+     "type": "light",
+     "v": 3
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 570,
+   "blocks": [
+    {
+     "type": "keyStart",
+     "v": "s"
+    },
+    {
+     "type": "driveBack"
+    },
+    {
+     "type": "light",
+     "v": 5
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 740,
+   "blocks": [
+    {
+     "type": "keyStart",
+     "v": "a"
+    },
+    {
+     "type": "turnLeft"
+    },
+    {
+     "type": "wait",
+     "v": 0.5
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 2
+    },
+    {
+     "type": "display",
+     "v": "Солға"
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 910,
+   "blocks": [
+    {
+     "type": "keyStart",
+     "v": "d"
+    },
+    {
+     "type": "turnRight"
+    },
+    {
+     "type": "wait",
+     "v": 0.5
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 2
+    },
+    {
+     "type": "display",
+     "v": "Оңға"
+    }
+   ]
+  },
+  {
+   "x": 760,
+   "y": 1080,
+   "blocks": [
+    {
+     "type": "keyStart",
+     "v": "x"
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 0
+    }
+   ]
+  }
+ ],
+ "ai": {
+  "active": 0,
+  "models": [
+   {
+    "name": "Қимылдар",
+    "sensor": "tilt",
+    "classes": [
+     {
+      "name": "Тыныш",
+      "samples": []
+     },
+     {
+      "name": "Сілку",
+      "samples": []
+     }
+    ]
+   }
+  ]
+ }
+}
