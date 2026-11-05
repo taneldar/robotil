@@ -493,6 +493,8 @@
     font: inherit; font-size: 13px; font-weight: 600; padding: 4px 12px; cursor: pointer;
   }
   #screenText { font-size: 28px; font-weight: 700; word-break: break-word; }
+  #screenText.face { font-size: 64px; line-height: 1.1; text-align: center; }
+  .block .dir.mood { font-size: 17px; line-height: 1; }
 
   /* ---------- Блоктар: тегіс LEGO кірпіштері ---------- */
   /* Пішіні SVG-мен салынады: оң жақта томпақ құлақша, сол жақта ойық */
@@ -865,6 +867,8 @@ const BLOCKS = {
   light:    { cat: 'light',  icon: 'bulb',   label: 'Шам', param: { kind: 'color', def: 3 } },
   sound:    { cat: 'media',  icon: 'sound',  label: 'Дыбыс', param: { kind: 'num', min: 1, max: 8, def: 1 } },
   display:  { cat: 'media',  icon: 'screen', label: 'Экран', param: { kind: 'text', def: 'Сәлем!', max: 12 } },
+  // робот сезімін сөзсіз, «бип-буп» дыбысымен көрсетеді және экранға бет-әлпетін шығарады
+  mood:     { cat: 'media',  icon: 'sound',  label: 'Көңіл-күй', param: { kind: 'mood', def: 0 } },
 };
 const PALETTE = [
   { title: 'Басқару',   color: '#f8bb3d', types: ['start', 'keyStart', 'msgStart', 'sendMsg', 'wait', 'repeat'] },
@@ -873,7 +877,7 @@ const PALETTE = [
   { title: 'Мотор',     color: '#0055bf', types: ['fwd', 'back', 'speed', 'runFor', 'stop'] },
   { title: 'Көлік (2 мотор)', color: '#0055bf', types: ['driveFwd', 'driveBack', 'turnLeft', 'turnRight'] },
   { title: 'Шам',       color: '#7b3fa0', types: ['light'] },
-  { title: 'Дыбыс, экран', color: '#237841', types: ['sound', 'display'] },
+  { title: 'Дыбыс, экран', color: '#237841', types: ['sound', 'display', 'mood'] },
 ];
 const isHat = b => !!BLOCKS[b?.type]?.hat;
 
@@ -1027,6 +1031,14 @@ function paramControl(b, editable) {
     dir.title = t.name + ' — бағытын ауыстыру үшін бас';
     dir.innerHTML = icon('arrow', '', `transform:rotate(${t.rot}deg)`);
     return dir;
+  }
+  if (p.kind === 'mood') {
+    const m = moodOf(b.v);
+    const el = document.createElement('div');
+    el.className = 'dir mood';
+    el.textContent = m.face;
+    el.title = m.name + ' — ауыстыру үшін бас';
+    return el;
   }
   if (p.kind === 'aiclass') {
     const pill = document.createElement('div');
@@ -1414,6 +1426,9 @@ function onTap(d) {
       const i = pairs.findIndex(([m, c]) => m === b.m && c === b.v);
       [b.m, b.v] = pairs[(i + 1) % pairs.length];
     }
+  } else if (kind === 'mood') {
+    b.v = (b.v + 1) % MOODS.length;
+    playMood(b.v);
   } else if (b.type === 'sound') {
     playSound(b.v);
   }
@@ -1764,6 +1779,108 @@ const SOUNDS = [
   t => { [523, 587, 659, 698, 784].forEach((f, i) => tone(f, t + i * 0.16, 0.15, 'triangle', 0.2)); return 0.85; }, // 7 до-ре-ми
   t => { [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.12, i === 3 ? 0.45 : 0.11, 'square', 0.1)); return 0.9; }, // 8 жеңіс
 ];
+// ===== Көңіл-күй дыбыстары: роботтың «бип-буп» тілі =====
+// Әр дыбыс — жиілігі сырғып өзгеретін бірнеше «буын». Әр ойнаған сайын биіктігі мен ұзақтығы
+// сәл басқаша шығады — робот тірі сияқты, бір дыбысты жаттап қайталамайды.
+function chirp(t, pts, { type = 'triangle', vol = 0.16, vib = 0, rate = 0, lp = 0, trem = 0 } = {}) {
+  const end = t + pts[pts.length - 1][0];
+  const osc = audioCtx.createOscillator();
+  osc.type = type;
+  osc.frequency.setValueAtTime(pts[0][1], t);
+  for (const [dt, f] of pts.slice(1)) osc.frequency.exponentialRampToValueAtTime(f, t + dt);
+  const lfos = [];
+  if (vib) { // діріл: жиілік толқиды
+    const l = audioCtx.createOscillator(), lg = audioCtx.createGain();
+    l.frequency.value = rate; lg.gain.value = vib;
+    l.connect(lg).connect(osc.frequency);
+    lfos.push(l);
+  }
+  let out = osc;
+  if (lp) { const f = audioCtx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp; out.connect(f); out = f; }
+  if (trem) { // тербеліс: дауыс күші жиі өзгереді (ызылдау, қорылдау)
+    const l = audioCtx.createOscillator(), lg = audioCtx.createGain(), tg = audioCtx.createGain();
+    l.frequency.value = trem; lg.gain.value = 0.5; tg.gain.value = 0.5;
+    l.connect(lg).connect(tg.gain); out.connect(tg); out = tg;
+    lfos.push(l);
+  }
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+  g.gain.setValueAtTime(vol, Math.max(t + 0.016, end - 0.04));
+  g.gain.exponentialRampToValueAtTime(0.0001, end);
+  out.connect(g).connect(audioCtx.destination);
+  [osc, ...lfos].forEach(o => { o.start(t); o.stop(end + 0.05); });
+  return end;
+}
+const rr = (a, b) => a + Math.random() * (b - a);
+// әр функция басталу уақыты t мен биіктік еселігін k алып, аяқталу уақытын қайтарады
+const MOODS = [
+  { name: 'Қуаныш', face: '😊', play: (t, k) => {
+    let x = t;
+    [1, 1.26, 1.5, 2].forEach(m => { const f = 650 * k * m * rr(0.96, 1.04); x = chirp(x, [[0, f * 0.8], [rr(0.06, 0.09), f * 1.1]]) + 0.025; });
+    return chirp(x, [[0, 1350 * k], [0.28, 1500 * k]], { type: 'sine', vib: 160 * k, rate: 18 });
+  } },
+  { name: 'Таң қалу', face: '😮', play: (t, k) => {
+    const x = chirp(t, [[0, 330 * k], [0.15, 360 * k], [rr(0.55, 0.7), 1500 * k]], { type: 'sine', vol: 0.2, vib: 40, rate: 9 });
+    return chirp(x + 0.04, [[0, 1700 * k], [0.12, 1800 * k]], { type: 'sine', vol: 0.1 });
+  } },
+  { name: 'Мұң', face: '😢', play: (t, k) => {
+    const x = chirp(t, [[0, 620 * k], [0.35, 560 * k]], { type: 'sine', vol: 0.2, vib: 10, rate: 5 });
+    return chirp(x + 0.08, [[0, 560 * k], [0.4, 480 * k], [rr(1, 1.2), 210 * k]], { type: 'sine', vol: 0.2, vib: 14, rate: 4.5 });
+  } },
+  { name: 'Ашу', face: '😠', play: (t, k) => {
+    let x = t;
+    for (let i = 0; i < 3; i++) x = chirp(x, [[0, 230 * k], [rr(0.13, 0.18), 150 * k]], { type: 'sawtooth', lp: 1400, trem: 30, vol: 0.18 }) + 0.05;
+    return chirp(x, [[0, 200 * k], [0.45, 90 * k]], { type: 'sawtooth', lp: 1100, trem: 24, vol: 0.2 });
+  } },
+  { name: 'Ұйқы', face: '😴', play: (t, k) => {
+    let x = t;
+    for (let i = 0; i < 2; i++) {
+      x = chirp(x, [[0, 75], [rr(0.6, 0.75), 62]], { type: 'sawtooth', lp: 450, trem: 20, vol: 0.22 });
+      x = chirp(x + 0.05, [[0, 900 * k], [0.45, 1900 * k]], { type: 'sine', vol: 0.07 }) + 0.15;
+    }
+    return x;
+  } },
+  { name: 'Сәлем', face: '👋', play: (t, k) => {
+    const x = chirp(t, [[0, 480 * k], [0.12, 1000 * k]]);
+    return chirp(x + 0.04, [[0, 1100 * k], [0.1, 1180 * k], [rr(0.28, 0.36), 700 * k]], { type: 'sine', vib: 30, rate: 14, vol: 0.18 });
+  } },
+  { name: 'Иә', face: '👍', play: (t, k) => {
+    const x = chirp(t, [[0, 620 * k], [0.09, 820 * k]]);
+    return chirp(x + 0.05, [[0, 820 * k], [0.13, 1250 * k]]);
+  } },
+  { name: 'Жоқ', face: '🙅', play: (t, k) => {
+    const x = chirp(t, [[0, 500 * k], [0.15, 380 * k]], { type: 'square', lp: 1800, vol: 0.12 });
+    return chirp(x + 0.08, [[0, 380 * k], [0.32, 250 * k]], { type: 'square', lp: 1500, vol: 0.12 });
+  } },
+  { name: 'Ойлану', face: '🤔', play: (t, k) => {
+    let x = t;
+    for (let i = 0; i < 8; i++) { const f = rr(600, 2000) * k; x = chirp(x, [[0, f], [0.05, f * rr(0.95, 1.05)]], { type: 'square', lp: 3000, vol: 0.07 }) + rr(0.02, 0.06); }
+    return chirp(x + 0.05, [[0, 500 * k], [0.25, 700 * k]], { type: 'sine', vol: 0.14 });
+  } },
+  { name: 'Қорқу', face: '😱', play: (t, k) => chirp(t, [[0, 900 * k], [0.55, 1700 * k], [rr(0.85, 1), 1450 * k]], { type: 'sine', vib: 130 * k, rate: 22, vol: 0.17 }) },
+  { name: 'Күлкі', face: '😂', play: (t, k) => {
+    let x = t;
+    for (let i = 0; i < 5; i++) { const f = 1150 * k * (1 - 0.07 * i); x = chirp(x, [[0, f], [0.09, f * 0.78]], { vib: 40, rate: 30 }) + rr(0.03, 0.05); }
+    return x;
+  } },
+  { name: 'Сүйкімді', face: '😍', play: (t, k) => {
+    const x = chirp(t, [[0, 480 * k], [0.5, 760 * k], [0.9, 700 * k]], { type: 'sine', vib: 25, rate: 6, vol: 0.2 });
+    return chirp(x + 0.05, [[0, 1500 * k], [0.3, 1500 * k]], { type: 'sine', vol: 0.1 });
+  } },
+];
+const moodOf = v => MOODS[v] ?? MOODS[0];
+// дыбыс ұзақтығын (секунд) қайтарады
+function playMood(n) {
+  try {
+    audioCtx ??= new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime + 0.02;
+    return moodOf(n).play(t, rr(0.9, 1.12)) - t;
+  } catch (e) {
+    return 0;
+  }
+}
 function playSound(n) {
   try {
     audioCtx ??= new AudioContext();
@@ -1864,9 +1981,10 @@ function showMicLevel() {
   });
 }
 
-function setScreen(text) {
+function setScreen(text, face = false) {
   $('screen').hidden = false;
   $('screenText').textContent = text;
+  $('screenText').classList.toggle('face', face);
 }
 
 // ===== Бағдарламаны орындау =====
@@ -1903,6 +2021,7 @@ async function exec(b) {
     case 'light':   setLed(COLORS[b.v].rgb); break;
     case 'sound':   await sleep(playSound(b.v) * 1000); break;
     case 'display': setScreen(b.v); break;
+    case 'mood':    setScreen(moodOf(b.v).face, true); await sleep(playMood(b.v) * 1000); break;
     case 'wait':    await sleep(b.v * 1000); break;
     case 'near':    await waitUntil(() => distance !== null && distance < b.v); break;
     case 'far':     await waitUntil(() => distance !== null && distance > b.v); break;
