@@ -493,6 +493,11 @@
     font: inherit; font-size: 13px; font-weight: 600; padding: 4px 12px; cursor: pointer;
   }
   #screenText { font-size: 28px; font-weight: 700; word-break: break-word; }
+  #feelBars { display: grid; gap: 3px; margin-top: 6px; }
+  #feelBars[hidden] { display: none; }
+  #feelBars div { display: grid; grid-template-columns: 20px 1fr 18px; gap: 6px; align-items: center; font-size: 13px; }
+  #feelBars i { display: block; height: 8px; border-radius: 4px; background: #2c312e; overflow: hidden; }
+  #feelBars i b { display: block; height: 100%; width: 0; background: #d6337f; transition: width .3s; }
   #screenText.face { font-size: 64px; line-height: 1.1; text-align: center; }
   .block .dir.mood { font-size: 17px; line-height: 1; }
 
@@ -569,6 +574,12 @@
   .cat-ai .icon { width: 28px; height: 28px; }
   .block .model { max-width: 88px; font-size: 9.5px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .block.repeat.cat-ai .pill { width: 84px; }
+  .cat-mood   { --c: #d6337f; --d: #9c2059; --ink: #fff; }    /* Dark Pink */
+  .block.start.cat-mood { --c: #d6337f; --d: #9c2059; --ink: #fff; }
+  .cat-mood.start .icon { width: 30px; height: 30px; }
+  .block .feel { display: flex; gap: 3px; align-items: center; }
+  .block .feel .dir { width: 30px; }
+  .block .feel input, .block .feel .pill { width: 40px; }
   .cat-flow   { --c: #f8bb3d; --d: #c48d18; --ink: #2b2100; } /* Bright Light Orange */
   .block.start { --c: #fe8a18; --d: #c4600a; --ink: #2b1700; cursor: pointer; } /* Bright Orange */
   .block.start .icon { width: 42px; height: 42px; }
@@ -732,7 +743,7 @@
     <button id="zoomIn" title="Үлкейту" aria-label="Үлкейту">+</button>
   </div>
   <div id="voiceBar" hidden><span class="vdot"></span><span id="voiceHeard"></span><button id="voiceLang" title="Сөз тану тілі"></button></div>
-  <div id="screen" hidden><div class="cap">Экран</div><div id="screenText"></div></div>
+  <div id="screen" hidden><div class="cap">Экран</div><div id="screenText"></div><div id="feelBars" hidden></div></div>
   <aside id="aiPanel" hidden aria-label="AI үйрету">
     <div class="ai-head"><b>AI үйрету</b><button id="aiClose" class="btn icon-only" aria-label="Жабу"></button></div>
     <p class="ai-help">Бір модель — AI-ға үйретілетін бір тапсырма. Мысалы, «Қол белгілері»: қашықтық датчигінің алдында қолды бұлғау. «Жер беті»: Майло тегіс не бұдыр жермен жүргенде еңіс датчигі дірілді сезеді. «Дыбыстар»: микрофон шапалақ пен ысқырықты ажыратады, өз дауысыңмен «алға», «тоқта» сияқты сөздерді де үйретуге болады.</p>
@@ -806,6 +817,7 @@ const ICON_PATHS = {
   play:  'M8 5v14l11-7z',
   turn:  'M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z',
   bolt:  'M13 2 4 14h7l-1 8 9-12h-7z',
+  heart: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z',
   timer: 'M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61 1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.96 8.96 0 0 0 12 4a9 9 0 1 0 9 9c0-2.12-.74-4.07-1.97-5.61zM12 20a7 7 0 1 1 0-14 7 7 0 0 1 0 14z',
   stop:  'M7 6h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z',
   bulb:  'M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z',
@@ -868,7 +880,11 @@ const BLOCKS = {
   sound:    { cat: 'media',  icon: 'sound',  label: 'Дыбыс', param: { kind: 'num', min: 1, max: 8, def: 1 } },
   display:  { cat: 'media',  icon: 'screen', label: 'Экран', param: { kind: 'text', def: 'Сәлем!', max: 12 } },
   // робот сезімін сөзсіз, «бип-буп» дыбысымен көрсетеді және экранға бет-әлпетін шығарады
-  mood:     { cat: 'media',  icon: 'sound',  label: 'Көңіл-күй', param: { kind: 'mood', def: 0 } },
+  mood:     { cat: 'mood',   icon: 'sound',  label: 'Көңіл-күй', param: { kind: 'mood', def: 0 } },
+  // Мінез: роботтың 3 сезімі (0–10). Оларды бала өз блоктарымен өзгертеді. b.f — қай сезім, b.v — сан
+  feelAdd:   { cat: 'mood', icon: 'heart', label: 'Сезім', param: { kind: 'feel', min: -10, max: 10, def: 2, f: 1 } },
+  feelStart: { cat: 'mood', icon: 'heart', label: 'Сезім жеткенде', hat: true, param: { kind: 'feel', min: 1, max: 10, def: 10, f: 0 } },
+  idleStart: { cat: 'mood', icon: 'timer', label: 'Үнсіз тұрса, сек', hat: true, param: { kind: 'num', min: 3, max: 300, def: 15 } },
 };
 const PALETTE = [
   { title: 'Басқару',   color: '#f8bb3d', types: ['start', 'keyStart', 'msgStart', 'sendMsg', 'wait', 'repeat'] },
@@ -877,7 +893,8 @@ const PALETTE = [
   { title: 'Мотор',     color: '#0055bf', types: ['fwd', 'back', 'speed', 'runFor', 'stop'] },
   { title: 'Көлік (2 мотор)', color: '#0055bf', types: ['driveFwd', 'driveBack', 'turnLeft', 'turnRight'] },
   { title: 'Шам',       color: '#7b3fa0', types: ['light'] },
-  { title: 'Дыбыс, экран', color: '#237841', types: ['sound', 'display', 'mood'] },
+  { title: 'Дыбыс, экран', color: '#237841', types: ['sound', 'display'] },
+  { title: 'Мінез', color: '#d6337f', types: ['mood', 'feelAdd', 'feelStart', 'idleStart'] },
 ];
 const isHat = b => !!BLOCKS[b?.type]?.hat;
 
@@ -908,6 +925,7 @@ let activeChain = chains[0]; // сөредегі блокты басқанда �
 function newBlock(type) {
   const p = BLOCKS[type].param;
   const b = p ? { type, v: p.def } : { type };
+  if (p?.kind === 'feel') b.f = p.f;
   if (isFrame(b)) b.body = [];
   if (p?.kind === 'aiclass') {
     // соңғы ашылған модельдің екінші қимылы (біріншісі әдетте «ештеңе жоқ»)
@@ -1031,6 +1049,36 @@ function paramControl(b, editable) {
     dir.title = t.name + ' — бағытын ауыстыру үшін бас';
     dir.innerHTML = icon('arrow', '', `transform:rotate(${t.rot}deg)`);
     return dir;
+  }
+  if (p.kind === 'feel') {
+    const f = feelOf(b.f);
+    const wrap = document.createElement('div');
+    wrap.className = 'feel';
+    const face = document.createElement('div');
+    face.className = 'dir mood';
+    face.textContent = f.face;
+    face.title = f.name + ' — сезімді ауыстыру үшін бас';
+    const shownN = b.type === 'feelAdd' && b.v > 0 ? '+' + b.v : String(b.v);
+    let num;
+    if (editable) {
+      num = document.createElement('input');
+      num.type = 'text';
+      num.inputMode = 'numeric';
+      num.value = shownN;
+      num.title = b.type === 'feelAdd' ? 'Қаншаға өзгереді: +2 — артады, -2 — азаяды' : 'Сезім осы санға жеткенде';
+      num.addEventListener('change', () => {
+        const n = parseInt(num.value, 10);
+        b.v = Number.isFinite(n) ? Math.max(p.min, Math.min(p.max, n)) : p.def;
+        num.value = b.type === 'feelAdd' && b.v > 0 ? '+' + b.v : b.v;
+        saveProgram();
+      });
+    } else {
+      num = document.createElement('div');
+      num.className = 'pill';
+      num.textContent = shownN;
+    }
+    wrap.append(face, num);
+    return wrap;
   }
   if (p.kind === 'mood') {
     const m = moodOf(b.v);
@@ -1429,6 +1477,8 @@ function onTap(d) {
   } else if (kind === 'mood') {
     b.v = (b.v + 1) % MOODS.length;
     playMood(b.v);
+  } else if (kind === 'feel') {
+    b.f = ((b.f ?? 0) + 1) % FEELINGS.length;
   } else if (b.type === 'sound') {
     playSound(b.v);
   }
@@ -1987,6 +2037,74 @@ function setScreen(text, face = false) {
   $('screenText').classList.toggle('face', face);
 }
 
+// ===== Мінез: роботтың 3 сезімі =====
+// Сезімді тек баланың блоктары өзгертеді («Сезім +2»); өздігінен тек баяу басылады — әр 5 с сайын 1-ге.
+// «Сезім жеткенде» бір рет қана іске қосылады: қайта қосылу үшін сезім 3-ке төмендеп, қайта көтерілуі керек.
+// «Үнсіз тұрса» — бала команда бермесе және мотор тоқтап тұрса (робот өз реакциясында қозғалса — есепке алмаймыз).
+const FEELINGS = [{ face: '😠', name: 'Ашу' }, { face: '😊', name: 'Қуаныш' }, { face: '😴', name: 'Ұйқы' }];
+const feelOf = f => ({ ...(FEELINGS[f] ?? FEELINGS[0]), i: FEELINGS[f] ? f : 0 });
+const FEEL_MAX = 10, FEEL_DECAY_MS = 5000, FEEL_REARM = 3;
+const ACTIVE_HATS = ['voiceStart', 'keyStart', 'aiStart'];
+const REACT_HATS = ['feelStart', 'idleStart'];
+let feelings = [0, 0, 0], lastActive = Date.now(), feelDecayAt = 0;
+const feelFired = new Set(), idleFired = new Set();
+
+const usesFeelings = () => chains.some(c => c.blocks.some(function has(b) { return b.type === 'feelAdd' || b.type === 'feelStart' || (b.body ?? []).some(has); }));
+function resetFeelings() {
+  feelings = [0, 0, 0];
+  feelFired.clear();
+  idleFired.clear();
+  lastActive = feelDecayAt = Date.now();
+  renderFeelings();
+}
+function setFeeling(i, v) {
+  feelings[feelOf(i).i] = Math.max(0, Math.min(FEEL_MAX, Math.round(v)));
+  renderFeelings();
+  checkFeelings();
+}
+function checkFeelings() {
+  for (const c of chains) {
+    const h = c.blocks[0];
+    if (h.type !== 'feelStart' || c.blocks.length < 2) continue;
+    const val = feelings[feelOf(h.f).i];
+    if (feelFired.has(c)) { if (val <= Math.max(0, h.v - FEEL_REARM)) feelFired.delete(c); continue; }
+    if (aiArmed && val >= h.v) { feelFired.add(c); startChains([c]); }
+  }
+}
+function markActive() {
+  lastActive = Date.now();
+  idleFired.clear();
+}
+function renderFeelings() {
+  const el = $('feelBars');
+  const on = usesFeelings();
+  el.hidden = !on;
+  if (!on) return;
+  if (aiArmed || isRunning()) $('screen').hidden = false;
+  if (el.children.length !== FEELINGS.length) {
+    el.innerHTML = FEELINGS.map(f => `<div title="${f.name}"><span>${f.face}</span><i><b></b></i><span></span></div>`).join('');
+  }
+  [...el.children].forEach((row, i) => {
+    row.querySelector('b').style.width = feelings[i] * 10 + '%';
+    row.lastElementChild.textContent = feelings[i];
+  });
+}
+setInterval(() => {
+  if (!aiArmed) return;
+  const now = Date.now();
+  if (now - feelDecayAt >= FEEL_DECAY_MS) {
+    feelDecayAt = now;
+    if (feelings.some(v => v > 0)) { feelings = feelings.map(v => Math.max(0, v - 1)); renderFeelings(); checkFeelings(); }
+  }
+  const reacting = [...runningChains].some(c => REACT_HATS.includes(c.blocks[0].type));
+  if (motorDir !== 0 && !reacting) markActive();
+  for (const c of chains) {
+    const h = c.blocks[0];
+    if (h.type !== 'idleStart' || c.blocks.length < 2 || idleFired.has(c)) continue;
+    if (now - lastActive >= h.v * 1000) { idleFired.add(c); startChains([c]); }
+  }
+}, 250);
+
 // ===== Бағдарламаны орындау =====
 const runningChains = new Set();
 let stopReq = false;
@@ -2021,6 +2139,7 @@ async function exec(b) {
     case 'light':   setLed(COLORS[b.v].rgb); break;
     case 'sound':   await sleep(playSound(b.v) * 1000); break;
     case 'display': setScreen(b.v); break;
+    case 'feelAdd': setFeeling(b.f, feelings[feelOf(b.f).i] + b.v); break;
     case 'mood':    setScreen(moodOf(b.v).face, true); await sleep(playMood(b.v) * 1000); break;
     case 'wait':    await sleep(b.v * 1000); break;
     case 'near':    await waitUntil(() => distance !== null && distance < b.v); break;
@@ -2076,6 +2195,8 @@ function startChains(list) {
     if (isConnected()) setStatus('Бағдарлама жүріп жатыр', 'ok');
     else setStatus('Хаб қосылмаған — тек көрсетілім режимі', 'busy');
   }
+  // баланың командасы (сөз, перне, AI) — робот «үнсіз тұрған» жоқ
+  if (list.some(c => ACTIVE_HATS.includes(c.blocks[0].type))) markActive();
   list.forEach(async ch => {
     runningChains.add(ch);
     try {
@@ -2112,7 +2233,7 @@ function boardNeedsMic(list = null) {
 
 // «AI танығанда» және «Сөз айтылғанда» тізбектері тек «Іске қос» басылғаннан кейін, ■ басылғанша іске қосылады
 let aiArmed = false;
-const AI_HATS = ['aiStart', 'voiceStart'];
+const AI_HATS = ['aiStart', 'voiceStart', 'feelStart', 'idleStart'];
 const hasAiHats = () => chains.some(c => AI_HATS.includes(c.blocks[0].type) && c.blocks.length > 1);
 const voiceChains = () => chains.filter(c => c.blocks[0].type === 'voiceStart' && c.blocks.length > 1);
 const listenText = () => !voiceChains().length ? 'AI тыңдап тұр — тоқтату үшін ■'
@@ -2123,6 +2244,7 @@ function runAll() {
   if (boardNeedsMic()) startMic();
   aiArmed = true;
   aiLive.forEach(L => { L.fired = null; });
+  resetFeelings();
   if (voiceChains().length) {
     // Android-та микрофонды бір уақытта тек біреу ұстай алады: дауыс деңгейі қосулы тұрса, сөз тану ештеңе естімейді
     ownOnly = IS_ANDROID && trainedWordModels().length > 0;
@@ -2946,7 +3068,7 @@ function showHome(open) {
 }
 
 const blockCount = list => list.reduce((n, b) => n + 1 + (isFrame(b) ? blockCount(b.body) : 0), 0);
-const CAT_COLORS = { motor: '#0055bf', sensor: '#c91a09', light: '#7b3fa0', media: '#237841', flow: '#f8bb3d', ai: '#008f9b' };
+const CAT_COLORS = { mood: '#d6337f', motor: '#0055bf', sensor: '#c91a09', light: '#7b3fa0', media: '#237841', flow: '#f8bb3d', ai: '#008f9b' };
 // браузерлердің бәрінде қазақша ай атаулары жоқ, сондықтан өзіміз жазамыз
 const MONTHS = ['қаңтар', 'ақпан', 'наурыз', 'сәуір', 'мамыр', 'маусым', 'шілде', 'тамыз', 'қыркүйек', 'қазан', 'қараша', 'желтоқсан'];
 function fmtDate(t) {
