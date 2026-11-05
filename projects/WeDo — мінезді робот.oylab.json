@@ -1,0 +1,597 @@
+{
+ "format": "oylab",
+ "version": 1,
+ "name": "WeDo — мінезді робот",
+ "created": 1794500000000,
+ "updated": 1794500000000,
+ "chains": [
+  {
+   "x": 40,
+   "y": 40,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "speed",
+     "v": 5
+    },
+    {
+     "type": "display",
+     "v": "Сәлем!"
+    },
+    {
+     "type": "fwd"
+    },
+    {
+     "type": "wait",
+     "v": 0.3
+    },
+    {
+     "type": "back"
+    },
+    {
+     "type": "wait",
+     "v": 0.3
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "mood",
+     "v": 5
+    }
+   ]
+  },
+  {
+   "x": 1400,
+   "y": 40,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "алға/жүр"
+    },
+    {
+     "type": "fwd"
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "mood",
+     "v": 6
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 240,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "артқа/арт"
+    },
+    {
+     "type": "back"
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "mood",
+     "v": 6
+    }
+   ]
+  },
+  {
+   "x": 1400,
+   "y": 240,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "тоқта/стоп"
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "mood",
+     "v": 6
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 440,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "жылдам/тез"
+    },
+    {
+     "type": "speed",
+     "v": 9
+    },
+    {
+     "type": "display",
+     "v": "Жылдам!"
+    },
+    {
+     "type": "mood",
+     "v": 0
+    }
+   ]
+  },
+  {
+   "x": 1400,
+   "y": 440,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "баяу/ақырын"
+    },
+    {
+     "type": "speed",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Баяу..."
+    },
+    {
+     "type": "mood",
+     "v": 6
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 640,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "биле/билей/танцуй"
+    },
+    {
+     "type": "light",
+     "v": 6
+    },
+    {
+     "type": "display",
+     "v": "Билеймін!"
+    },
+    {
+     "type": "repeat",
+     "v": 3,
+     "body": [
+      {
+       "type": "fwd"
+      },
+      {
+       "type": "wait",
+       "v": 0.3
+      },
+      {
+       "type": "back"
+      },
+      {
+       "type": "wait",
+       "v": 0.3
+      }
+     ]
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "mood",
+     "v": 10
+    },
+    {
+     "type": "light",
+     "v": 3
+    }
+   ]
+  },
+  {
+   "x": 1400,
+   "y": 640,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "рақмет/рахмет/жарайсың"
+    },
+    {
+     "type": "feelAdd",
+     "f": 1,
+     "v": 4
+    },
+    {
+     "type": "mood",
+     "v": 11
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 840,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "кешір/кешіріңіз"
+    },
+    {
+     "type": "feelAdd",
+     "f": 0,
+     "v": -10
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Жарайды!"
+    },
+    {
+     "type": "mood",
+     "v": 0
+    }
+   ]
+  },
+  {
+   "x": 1400,
+   "y": 840,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "сәлем/оян/привет"
+    },
+    {
+     "type": "feelAdd",
+     "f": 2,
+     "v": -10
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Ояндым!"
+    },
+    {
+     "type": "mood",
+     "v": 1
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1040,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "near",
+       "v": 15
+      },
+      {
+       "type": "stop"
+      },
+      {
+       "type": "feelAdd",
+       "f": 0,
+       "v": 5
+      },
+      {
+       "type": "mood",
+       "v": 9
+      },
+      {
+       "type": "back"
+      },
+      {
+       "type": "wait",
+       "v": 1
+      },
+      {
+       "type": "stop"
+      },
+      {
+       "type": "far",
+       "v": 30
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 1400,
+   "y": 1040,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "tilt",
+       "v": 3
+      },
+      {
+       "type": "stop"
+      },
+      {
+       "type": "feelAdd",
+       "f": 0,
+       "v": 5
+      },
+      {
+       "type": "mood",
+       "v": 9
+      },
+      {
+       "type": "wait",
+       "v": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1240,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "tilt",
+       "v": 1
+      },
+      {
+       "type": "feelAdd",
+       "f": 1,
+       "v": 3
+      },
+      {
+       "type": "mood",
+       "v": 10
+      },
+      {
+       "type": "wait",
+       "v": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 1400,
+   "y": 1240,
+   "blocks": [
+    {
+     "type": "feelStart",
+     "f": 0,
+     "v": 10
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 0
+    },
+    {
+     "type": "display",
+     "v": "Ренжідім!"
+    },
+    {
+     "type": "mood",
+     "v": 3
+    },
+    {
+     "type": "back"
+    },
+    {
+     "type": "wait",
+     "v": 1
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "display",
+     "v": "Кешір де"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1440,
+   "blocks": [
+    {
+     "type": "feelStart",
+     "f": 1,
+     "v": 10
+    },
+    {
+     "type": "light",
+     "v": 6
+    },
+    {
+     "type": "display",
+     "v": "Жақсы көрем!"
+    },
+    {
+     "type": "repeat",
+     "v": 2,
+     "body": [
+      {
+       "type": "fwd"
+      },
+      {
+       "type": "wait",
+       "v": 0.3
+      },
+      {
+       "type": "back"
+      },
+      {
+       "type": "wait",
+       "v": 0.3
+      }
+     ]
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "mood",
+     "v": 11
+    }
+   ]
+  },
+  {
+   "x": 1400,
+   "y": 1440,
+   "blocks": [
+    {
+     "type": "idleStart",
+     "v": 15
+    },
+    {
+     "type": "display",
+     "v": "Не істейік?"
+    },
+    {
+     "type": "fwd"
+    },
+    {
+     "type": "wait",
+     "v": 0.3
+    },
+    {
+     "type": "back"
+    },
+    {
+     "type": "wait",
+     "v": 0.3
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "mood",
+     "v": 8
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1640,
+   "blocks": [
+    {
+     "type": "idleStart",
+     "v": 40
+    },
+    {
+     "type": "feelAdd",
+     "f": 2,
+     "v": 10
+    }
+   ]
+  },
+  {
+   "x": 1400,
+   "y": 1640,
+   "blocks": [
+    {
+     "type": "feelStart",
+     "f": 2,
+     "v": 10
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 5
+    },
+    {
+     "type": "display",
+     "v": "Хррр..."
+    },
+    {
+     "type": "mood",
+     "v": 4
+    }
+   ]
+  }
+ ],
+ "ai": {
+  "active": 0,
+  "models": [
+   {
+    "name": "Сөздер",
+    "sensor": "word",
+    "classes": [
+     {
+      "name": "алға",
+      "samples": []
+     },
+     {
+      "name": "артқа",
+      "samples": []
+     },
+     {
+      "name": "тоқта",
+      "samples": []
+     },
+     {
+      "name": "жылдам",
+      "samples": []
+     },
+     {
+      "name": "баяу",
+      "samples": []
+     },
+     {
+      "name": "биле",
+      "samples": []
+     },
+     {
+      "name": "рақмет",
+      "samples": []
+     },
+     {
+      "name": "кешір",
+      "samples": []
+     },
+     {
+      "name": "сәлем",
+      "samples": []
+     }
+    ]
+   }
+  ]
+ }
+}
