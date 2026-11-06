@@ -646,6 +646,15 @@
   .block .feel .dir { width: 30px; }
   .block .feel input, .block .feel .pill { width: 40px; }
   .cat-flow   { --c: #f8bb3d; --d: #c48d18; --ink: #2b2100; } /* Bright Light Orange */
+  .cat-logic  { --c: #f76707; --d: #b54a03; --ink: #fff; }    /* Логика */
+  .block.start.cat-logic { --c: #f76707; --d: #b54a03; --ink: #fff; }
+  .block.repeat.cat-logic > .arm { width: 80px; }
+  .block.repeat.cat-logic .label { text-align: center; line-height: 1.15; }
+  #scoreBadge { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; font-size: 26px; font-weight: 800; color: #ffd43b; }
+  #scoreBadge[hidden] { display: none; }
+  #scoreBadge svg { width: 28px; height: 28px; fill: #ffd43b; }
+  #scoreBadge.pop { animation: spop .35s ease-out; }
+  @keyframes spop { 40% { transform: scale(1.35); } }
   .block.start { --c: #fe8a18; --d: #c4600a; --ink: #2b1700; cursor: pointer; } /* Bright Orange */
   .block.start .icon { width: 42px; height: 42px; }
 
@@ -821,7 +830,7 @@
     <button id="zoomIn" title="Үлкейту" aria-label="Үлкейту">+</button>
   </div>
   <div id="voiceBar" hidden><span class="vdot"></span><span id="voiceHeard"></span><button id="voiceLang" title="Сөз тану тілі"></button></div>
-  <div id="screen" hidden><div class="cap">Экран</div><div id="screenText"></div><div id="feelBars" hidden></div></div>
+  <div id="screen" hidden><div class="cap">Экран</div><div id="screenText"></div><div id="feelBars" hidden></div><div id="scoreBadge" hidden></div></div>
   <aside id="aiPanel" hidden aria-label="AI үйрету">
     <div class="ai-head"><b>AI үйрету</b><button id="aiClose" class="btn icon-only" aria-label="Жабу"></button></div>
     <p class="ai-help">Бір модель — AI-ға үйретілетін бір тапсырма. Мысалы, «Қол белгілері»: қашықтық датчигінің алдында қолды бұлғау. «Жер беті»: Майло тегіс не бұдыр жермен жүргенде еңіс датчигі дірілді сезеді. «Дыбыстар»: микрофон шапалақ пен ысқырықты ажыратады, өз дауысыңмен «алға», «тоқта» сияқты сөздерді де үйретуге болады.</p>
@@ -919,6 +928,9 @@ const ICON_PATHS = {
   micOff:'M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3 3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z',
   spark: 'M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z',
   rec:   'M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z',
+  fork:  'M14 4l2.29 2.29-2.88 2.88 1.42 1.42 2.88-2.88L20 10V4zm-4 0H4v6l2.29-2.29 4.71 4.7V20h2v-8.41l-5.29-5.3z',
+  star:  'M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
+  dice:  'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7.5 18c-.83 0-1.5-.67-1.5-1.5S6.67 15 7.5 15s1.5.67 1.5 1.5S8.33 18 7.5 18zm0-9C6.67 9 6 8.33 6 7.5S6.67 6 7.5 6 9 6.67 9 7.5 8.33 9 7.5 9zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm0-9c-.83 0-1.5-.67-1.5-1.5S15.67 6 16.5 6s1.5.67 1.5 1.5S17.33 9 16.5 9z',
 };
 const icon = (name, cls = 'ic', style = '') =>
   `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"${style ? ` style="${style}"` : ''}><path d="${ICON_PATHS[name]}"/></svg>`;
@@ -963,7 +975,22 @@ const BLOCKS = {
   feelAdd:   { cat: 'mood', icon: 'heart', label: 'Сезім', param: { kind: 'feel', min: -10, max: 10, def: 2, f: 1 } },
   feelStart: { cat: 'mood', icon: 'heart', label: 'Сезім жеткенде', hat: true, param: { kind: 'feel', min: 1, max: 10, def: 10, f: 0 } },
   idleStart: { cat: 'mood', icon: 'timer', label: 'Үнсіз тұрса, сек', hat: true, param: { kind: 'num', min: 3, max: 300, def: 15 } },
+  // Логика: «Егер …» жақтаулары — шарт дәл сол сәтте тексеріледі; орындалса ішіндегі блоктар жүреді.
+  // «Әйтпесе» — алдындағы «Егер» орындалмаса ғана жүреді
+  ifNear:   { cat: 'logic', icon: 'radar', label: 'Егер жақын', param: { kind: 'num', min: 1, max: 100, def: 30 } },
+  ifTilt:   { cat: 'logic', icon: 'tilt',  label: 'Егер еңкейсе', param: { kind: 'tilt', def: 3 } },
+  ifLoud:   { cat: 'logic', icon: 'mic',   label: 'Егер шулы', param: { kind: 'num', min: 1, max: 10, def: 6 } },
+  ifRandom: { cat: 'logic', icon: 'dice',  label: 'Кездейсоқ' },
+  ifScore:  { cat: 'logic', icon: 'star',  label: 'Егер ұпай ≥', param: { kind: 'num', min: 0, max: 99, def: 5 } },
+  else:     { cat: 'logic', icon: 'fork',  label: 'Әйтпесе' },
+  // кездейсоқ күту: 1 секундтан v секундқа дейін (реакция ойындарына)
+  waitRand: { cat: 'logic', icon: 'dice',  label: 'Кездейсоқ күт, сек', param: { kind: 'num', min: 2, max: 30, def: 5 } },
+  // Ұпай: бір ортақ сан (0–99), экранда жұлдызбен көрінеді
+  scoreSet: { cat: 'logic', icon: 'star',  label: 'Ұпай =', param: { kind: 'num', min: 0, max: 99, def: 0 } },
+  scoreAdd: { cat: 'logic', icon: 'star',  label: 'Ұпай', param: { kind: 'delta', min: -10, max: 10, def: 1 } },
+  scoreStart: { cat: 'logic', icon: 'star', label: 'Ұпай жеткенде', hat: true, param: { kind: 'num', min: 1, max: 99, def: 5 } },
 };
+const IF_TYPES = ['ifNear', 'ifTilt', 'ifLoud', 'ifRandom', 'ifScore'];
 const PALETTE = [
   { title: 'Басқару',   color: '#f8bb3d', types: ['start', 'keyStart', 'msgStart', 'sendMsg', 'wait', 'repeat'] },
   { title: 'Датчиктер', color: '#c91a09', types: ['near', 'far', 'tilt', 'loud'] },
@@ -973,6 +1000,7 @@ const PALETTE = [
   { title: 'Шам',       color: '#7b3fa0', types: ['light'] },
   { title: 'Дыбыс, экран', color: '#237841', types: ['sound', 'display'] },
   { title: 'Мінез', color: '#d6337f', types: ['mood', 'feelAdd', 'feelStart', 'idleStart'] },
+  { title: 'Логика', color: '#f76707', types: ['ifNear', 'ifTilt', 'ifLoud', 'ifRandom', 'else', 'waitRand', 'scoreSet', 'scoreAdd', 'ifScore', 'scoreStart'] },
 ];
 const isHat = b => !!BLOCKS[b?.type]?.hat;
 
@@ -1037,8 +1065,8 @@ const BW = 96, BH = 96, R = 14, KNOB = 11, DEPTH = 8, STUD = 12;
 // «Қайтала» жақтауы: сол иығы (иконка мен сан), оң иығы және үстіңгі/астыңғы жолақ қалыңдығы
 const RL = 66, RR = 16, PAD = 12;
 // Ішіне блок салынатын жақтаулар: «Қайтала» және «Егер AI таныса» (оның иығы кеңірек — қимыл аты сыйсын)
-const isFrame = b => b?.type === 'repeat' || b?.type === 'aiIf';
-const armW = b => b.type === 'aiIf' ? 96 : RL;
+const isFrame = b => b?.type === 'repeat' || b?.type === 'aiIf' || b?.type === 'else' || IF_TYPES.includes(b?.type);
+const armW = b => b.type === 'aiIf' ? 96 : b.type === 'repeat' ? RL : 80;
 
 function outlinePath(w, h, mid, notch) {
   return `M${R},0H${w - R}Q${w},0 ${w},${R}V${mid - KNOB}` +
@@ -1172,6 +1200,27 @@ function paramControl(b, editable) {
     pill.textContent = b.v;
     pill.title = 'Қимылды ауыстыру үшін бас';
     return pill;
+  }
+  if (p.kind === 'delta') {
+    const txt = () => b.v > 0 ? '+' + b.v : String(b.v);
+    if (!editable) {
+      const pill = document.createElement('div');
+      pill.className = 'pill';
+      pill.textContent = txt();
+      return pill;
+    }
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.inputMode = 'numeric';
+    input.value = txt();
+    input.title = 'Қаншаға өзгереді: +1 — қосылады, -1 — азаяды';
+    input.addEventListener('change', () => {
+      const n = parseInt(input.value, 10);
+      b.v = Number.isFinite(n) ? Math.max(p.min, Math.min(p.max, n)) : p.def;
+      input.value = txt();
+      saveProgram();
+    });
+    return input;
   }
   const shown = p.kind === 'count' && b.v === 0 ? '∞' : String(b.v);
   const cls = p.kind === 'text' ? 'text' : '';
@@ -2247,6 +2296,44 @@ setInterval(() => {
   }
 }, 250);
 
+// ===== Ұпай: бағдарламадағы бір ортақ сан =====
+// «Ұпай жеткенде» сан шекке жеткенде бір рет іске қосылады; ұпай қайта шектен төмендесе — қайта дайын
+let score = 0;
+const scoreFired = new Set();
+const usesScore = () => chains.some(c => c.blocks.some(function has(b) { return /^score|^ifScore/.test(b.type) || (b.body ?? []).some(has); }));
+function renderScore(pop = false) {
+  const el = $('scoreBadge');
+  el.hidden = !usesScore();
+  if (el.hidden) return;
+  if (aiArmed || isRunning()) $('screen').hidden = false;
+  el.innerHTML = icon('star', '') + '<span>' + score + '</span>';
+  if (pop) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+}
+function setScore(v) {
+  const old = score;
+  score = Math.max(0, Math.min(99, Math.round(v)));
+  renderScore(score !== old);
+  for (const c of chains) {
+    const h = c.blocks[0];
+    if (h.type !== 'scoreStart' || c.blocks.length < 2) continue;
+    if (score < h.v) { scoreFired.delete(c); continue; }
+    if (!scoreFired.has(c) && (aiArmed || isRunning())) { scoreFired.add(c); startChains([c]); }
+  }
+}
+function resetScore() { score = 0; scoreFired.clear(); renderScore(); }
+
+// «Егер …» шарты дәл қазір орындала ма
+function condNow(b) {
+  switch (b.type) {
+    case 'ifNear':   return distance !== null && distance < b.v;
+    case 'ifTilt':   return tiltDir() === TILT_DIRS[b.v].key;
+    case 'ifLoud':   return micLevel !== null && micLevel >= b.v;
+    case 'ifRandom': return Math.random() < 0.5;
+    case 'ifScore':  return score >= b.v;
+  }
+  return false;
+}
+
 // ===== Бағдарламаны орындау =====
 const runningChains = new Set();
 let stopReq = false;
@@ -2284,6 +2371,9 @@ async function exec(b) {
     case 'feelAdd': setFeeling(b.f, feelings[feelOf(b.f).i] + b.v); break;
     case 'mood':    setScreenFace(moodFace(b.v)); await sleep(playMood(b.v) * 1000); break;
     case 'wait':    await sleep(b.v * 1000); break;
+    case 'waitRand': await sleep((1 + Math.random() * (b.v - 1)) * 1000); break;
+    case 'scoreSet': setScore(b.v); break;
+    case 'scoreAdd': setScore(score + b.v); break;
     case 'near':    await waitUntil(() => distance !== null && distance < b.v); break;
     case 'far':     await waitUntil(() => distance !== null && distance > b.v); break;
     case 'tilt':    await waitUntil(() => tiltDir() === TILT_DIRS[b.v].key); break;
@@ -2304,6 +2394,7 @@ async function exec(b) {
 }
 
 async function execList(list, from = 0) {
+  let lastIf = null; // алдындағы «Егер» нәтижесі — «Әйтпесе» үшін
   for (let i = from; i < list.length && !stopReq; i++) {
     const b = list[i];
     const el = blockEls.get(b);
@@ -2317,8 +2408,18 @@ async function execList(list, from = 0) {
     } else if (b.type === 'aiIf') {
       // соңғы 2 секундты дәл қазір тексереміз: танылса — ішіндегі блоктар орындалады, әйтпесе өткізіп жібереміз
       const m = findModel(b.m);
-      if (m && predictNow(m)?.name === b.v) await execList(b.body);
+      lastIf = !!(m && predictNow(m)?.name === b.v);
+      if (lastIf) await execList(b.body);
       else await sleep(150);
+    } else if (IF_TYPES.includes(b.type)) {
+      if (b.type === 'ifLoud') await startMic();
+      lastIf = condNow(b);
+      if (lastIf) await execList(b.body);
+      else await sleep(150);
+    } else if (b.type === 'else') {
+      if (lastIf === false) await execList(b.body);
+      else await sleep(150);
+      lastIf = null;
     } else {
       await exec(b);
       await sleep(250); // блок жанғаны көрінсін
@@ -2368,7 +2469,7 @@ function finishRun() {
 function boardNeedsMic(list = null) {
   const lists = list ? [list] : chains.map(c => c.blocks);
   return lists.some(l => l.some(b =>
-    b.type === 'loud' ||
+    b.type === 'loud' || b.type === 'ifLoud' ||
     (BLOCKS[b.type].param?.kind === 'aiclass' && needsMic(findModel(b.m))) ||
     (isFrame(b) && boardNeedsMic(b.body))));
 }
@@ -2387,6 +2488,7 @@ function runAll() {
   aiArmed = true;
   aiLive.forEach(L => { L.fired = null; });
   resetFeelings();
+  resetScore();
   if (voiceChains().length) {
     // Android-та микрофонды бір уақытта тек біреу ұстай алады: дауыс деңгейі қосулы тұрса, сөз тану ештеңе естімейді
     ownOnly = IS_ANDROID && trainedWordModels().length > 0;
