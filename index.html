@@ -340,6 +340,37 @@
   .proj-actions button:hover { background: var(--bg); }
   .proj-actions .del { color: var(--err); }
   .home-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+  /* Дайын мысалдар */
+  .home-ex { display: grid; gap: 14px; }
+  .home-ex h2 { margin: 0; font-size: 20px; font-weight: 700; }
+  .ex-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ex-tabs button { height: 38px; padding: 0 16px; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); color: var(--text); font: inherit; font-weight: 600; }
+  .ex-tabs button[aria-selected="true"] { background: #0055bf; border-color: #0055bf; color: #fff; }
+  #exList { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .ex-card { display: grid; gap: 10px; align-content: start; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .ex-card h3 { margin: 0; font-size: 18px; display: flex; gap: 10px; align-items: center; }
+  .ex-card h3 .em { font-size: 28px; }
+  .ex-card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
+  .ex-need { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ex-need span { font-size: 12px; padding: 3px 9px; border-radius: 10px; background: var(--bg); color: var(--text); }
+  .ex-btns { display: flex; gap: 8px; margin-top: 4px; }
+  .ex-btns button { flex: 1; height: 40px; border-radius: 10px; font: inherit; font-weight: 700; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+  .ex-btns .go { background: #fe8a18; border-color: #c4600a; color: #2b1700; }
+  .ex-soon { margin: 0; padding: 20px; border: 2px dashed var(--line); border-radius: 12px; background: var(--surface); color: var(--muted); }
+  #exGuide { width: min(680px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: none; border-radius: 16px; background: var(--surface); color: var(--text); }
+  #exGuide::backdrop { background: rgba(0,0,0,.45); }
+  .exg-body { padding: 24px; display: grid; gap: 16px; font-size: 15px; line-height: 1.55; }
+  .exg-body h2 { margin: 0; font-size: 24px; }
+  .exg-body h4 { margin: 0 0 6px; font-size: 16px; }
+  .exg-body p, .exg-body ol, .exg-body ul { margin: 0; }
+  .exg-body ol, .exg-body ul { padding-left: 22px; }
+  .exg-words { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
+  .exg-words b { font-family: var(--font-num); font-size: 14px; background: var(--bg); padding: 1px 8px; border-radius: 6px; justify-self: start; }
+  .exg-tip { padding: 12px 14px; border-radius: 10px; background: color-mix(in srgb, #ffd400 22%, var(--surface)); }
+  .exg-foot { position: sticky; bottom: 0; display: flex; gap: 8px; padding: 14px 24px; border-top: 1px solid var(--line); background: var(--surface); }
+  .exg-foot button { height: 42px; padding: 0 18px; border-radius: 10px; font: inherit; font-weight: 700; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+  .exg-foot .go { flex: 1; background: #fe8a18; border-color: #c4600a; color: #2b1700; }
+  #btnGuide[hidden] { display: none; }
   .home-wrap > *, .home-head > div { min-width: 0; }
   @media (max-width: 720px) {
     .home-tiles { grid-template-columns: 1fr; }
@@ -695,6 +726,14 @@
       <button class="tile tile-open" id="homeOpen"><b>Файлдан ашу</b><span>Компьютердегі .oylab.json жоба файлы</span></button>
       <button class="tile tile-example" id="homeExample"><b>Майло мысалы</b><span>Дайын бағдарлама және AI тізбегі</span></button>
     </div>
+    <section class="home-ex" aria-label="Дайын мысалдар">
+      <h2>Дайын мысалдар</h2>
+      <div class="ex-tabs" role="tablist">
+        <button role="tab" data-kit="wedo">WeDo 2.0</button>
+        <button role="tab" data-kit="essential">SPIKE Essential</button>
+      </div>
+      <div id="exList"></div>
+    </section>
     <section class="home-list">
       <h2>Менің жобаларым</h2>
       <p id="homeEmpty" class="home-empty">Әзірге жоба жоқ. «Жаңа жоба» батырмасын бас немесе жоба файлын осы бетке сүйреп әкел.</p>
@@ -705,6 +744,10 @@
   </div>
   <input type="file" id="fileInput" accept=".json,application/json" hidden>
 </section>
+<dialog id="exGuide" aria-label="Мысал нұсқауы">
+  <div class="exg-body" id="exGuideBody"></div>
+  <div class="exg-foot"><button class="go" id="exGuideOpen">Бағдарламаны ашу</button><button id="exGuideClose">Жабу</button></div>
+</dialog>
 
 <header class="menu">
   <button id="btnHome" class="btn icon-only" title="Жобалар" aria-label="Жобалар"></button>
@@ -713,6 +756,7 @@
     <div class="logo-text"><b>Oylab</b><span>WeDo 2.0 үшін AI-студия</span></div>
   </div>
   <input id="projName" maxlength="40" aria-label="Жоба аты" title="Жоба аты">
+  <button id="btnGuide" class="btn" title="Осы мысалдың нұсқауы" hidden>📖 Нұсқау</button>
   <select id="hubKind" class="chip" title="Қай жиынтыққа қосыламыз" aria-label="Жиынтық">
     <option value="wedo">WeDo 2.0</option>
     <option value="essential">SPIKE Essential</option>
@@ -3023,6 +3067,7 @@ function openProject(p) {
   render();
   renderAIList();
   persist();
+  try { renderGuideBtn(); } catch {} // EXAMPLES әлі жарияланбаған болуы мүмкін (бет жүктелгенде)
 }
 
 function createProject(name, ch, aiData) {
@@ -3132,6 +3177,104 @@ $('homeNew').addEventListener('click', () => {
   $('projName').focus();
   $('projName').select();
 });
+// ===== Дайын мысалдар: оқушы мұғалімсіз оқып, ашып, іске қоса алатындай =====
+const EXAMPLES = [
+  {
+    id: 'wedo-mood', kit: 'wedo', em: '🤖', file: 'WeDo — мінезді робот.oylab.json',
+    title: 'Мінезді робот',
+    short: 'Сөзіңе құлақ асатын робот. «Рақмет» десең қуанады, мазаласаң ашуланады, ұзақ үндемесең ұйықтап қалады.',
+    need: ['WeDo 2.0 хабы', '1 мотор', 'қашықтық немесе еңіс датчигі', 'микрофон'],
+    guide: `
+      <h2>🤖 Мінезді робот</h2>
+      <p>Бұл робот сөзбен басқарылады және оның <b>сезімі</b> бар: ашу 😠, қуаныш 😊, ұйқы 😴. Сен не айтсаң, не істесең — сезімі соған қарай өзгереді. Экранның төменгі жағындағы үш жолақтан оның көңіл-күйін көріп тұрасың.</p>
+      <div><h4>1. Не керек</h4><ul>
+        <li>WeDo 2.0 хабы және <b>1 мотор</b> — мысалы, Майло немесе кез келген бір моторлы робот.</li>
+        <li>Хабтың екінші портына <b>қашықтық датчигі</b> немесе <b>еңіс датчигі</b> (біреуі жеткілікті).</li>
+        <li>Микрофоны бар компьютер, Chrome немесе Edge браузері.</li></ul></div>
+      <div><h4>2. Қалай іске қосамын</h4><ol>
+        <li>Төмендегі <b>«Бағдарламаны ашу»</b> батырмасын бас.</li>
+        <li>Хабтың жасыл түймесін бас, сосын жоғарыдағы көк <b>Bluetooth</b> батырмасын басып, хабты таңда.</li>
+        <li>Жасыл <b>«Іске қос»</b> батырмасын бас. Браузер микрофон сұраса — рұқсат бер.</li>
+        <li>Робот «Сәлем!» деп тербеледі — енді сөйлей бер!</li></ol></div>
+      <div><h4>3. Не айтуға болады</h4><div class="exg-words">
+        <b>алға</b><span>мотор алға айналады</span>
+        <b>артқа</b><span>мотор кері айналады</span>
+        <b>тоқта</b><span>мотор тоқтайды</span>
+        <b>жылдам</b><span>жылдамырақ жүреді</span>
+        <b>баяу</b><span>ақырын жүреді</span>
+        <b>биле</b><span>алға-артқа билейді</span>
+        <b>рақмет</b><span>қуанады 😊</span>
+        <b>кешір</b><span>ашуы басылады</span>
+        <b>сәлем</b> <span>ұйқыдан оянады</span></div></div>
+      <div><h4>4. Байқап көр</h4><ol>
+        <li>Қолыңды датчикке бірнеше рет тез жақындат. Робот қорқады, ашуы өседі. Ашу толса не болады?</li>
+        <li>Сосын <b>«кешір»</b> де. Ашуы қайда кетті?</li>
+        <li>3 рет қатарынан <b>«рақмет»</b> де — робот саған не дейді?</li>
+        <li>Ештеңе айтпай 40 секунд күт. Робот не істеді? Оны қалай оятасың?</li>
+        <li>Еңіс датчигі болса: роботты солға, сосын оңға еңкейт. Айырмашылығы бар ма?</li></ol></div>
+      <div><h4>5. Өзің өзгертіп көр</h4><ul>
+        <li><b>«Сөз айтылғанда»</b> блогының сөзін өзгерт: мысалы «алға» орнына «жүр» деп жаз.</li>
+        <li><b>«Сезім»</b> блогындағы санды өзгерт: «рақмет» +4 емес, +10 болса не болады?</li>
+        <li><b>«Көңіл-күй»</b> блогының бетін бас — робот басқа дыбыс шығарады.</li></ul></div>
+      <p class="exg-tip">💡 Сөзді Google таниды, сондықтан интернет керек. Сынып шулы болса немесе робот сөзді естімесе — <b>AI</b> бөліміне кіріп, «Сөздер» моделіне әр сөзді өз дауысыңмен 3 рет жаз. Сонда робот сенің дауысыңды интернетсіз де таниды.</p>`,
+  },
+];
+let exKit = hubKind === 'essential' ? 'essential' : 'wedo';
+let exOpen = null;
+function renderExamples() {
+  document.querySelectorAll('.ex-tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.kit === exKit));
+  const list = $('exList');
+  const items = EXAMPLES.filter(e => e.kit === exKit);
+  list.innerHTML = items.length ? '' : '<p class="ex-soon">Бұл жиынтыққа арналған мысалдар жақында қосылады.</p>';
+  items.forEach(e => {
+    const card = document.createElement('article');
+    card.className = 'ex-card';
+    card.innerHTML = `<h3><span class="em">${e.em}</span>${e.title}</h3><p>${e.short}</p>
+      <div class="ex-need">${e.need.map(n => `<span>${n}</span>`).join('')}</div>
+      <div class="ex-btns"><button class="read">Нұсқауды оқу</button><button class="go">Ашу</button></div>`;
+    card.querySelector('.read').addEventListener('click', () => showGuide(e));
+    card.querySelector('.go').addEventListener('click', () => openExample(e));
+    list.appendChild(card);
+  });
+}
+function showGuide(e) {
+  exOpen = e;
+  $('exGuideBody').innerHTML = e.guide;
+  $('exGuideBody').scrollTop = 0;
+  $('exGuideOpen').hidden = current?.example === e.id && $('home').hidden;
+  $('exGuide').showModal();
+}
+async function openExample(e) {
+  try {
+    const r = await fetch('projects/' + encodeURIComponent(e.file));
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if (!validChains(d.chains)) throw new Error('format');
+    if (HUB_KINDS[e.kit] && hubKind !== e.kit) {
+      hubKind = e.kit;
+      try { localStorage.setItem(HUB_KIND_KEY, hubKind); } catch {}
+      renderHubKind();
+    }
+    $('exGuide').close();
+    const p = createProject(e.title, d.chains, validAI(d.ai) ? d.ai : defaultAI());
+    p.example = e.id;
+    persist();
+    renderGuideBtn();
+  } catch (err) {
+    alert('Мысалды жүктей алмадым. Интернетті тексеріп, қайта көр.');
+  }
+}
+// мысалдан ашылған жобада нұсқауды қайта ашатын батырма
+function renderGuideBtn() {
+  $('btnGuide').hidden = !EXAMPLES.some(e => e.id === current?.example);
+}
+document.querySelectorAll('.ex-tabs button').forEach(b => b.addEventListener('click', () => { exKit = b.dataset.kit; renderExamples(); }));
+$('exGuideClose').addEventListener('click', () => $('exGuide').close());
+$('exGuideOpen').addEventListener('click', () => exOpen && openExample(exOpen));
+$('btnGuide').addEventListener('click', () => { const e = EXAMPLES.find(x => x.id === current?.example); if (e) showGuide(e); });
+renderExamples();
+renderGuideBtn();
+
 $('homeExample').addEventListener('click', () => createProject('Майло: мысал', clone(EXAMPLE_CHAINS), defaultAI()));
 $('homeOpen').addEventListener('click', () => $('fileInput').click());
 $('fileInput').addEventListener('change', e => {
