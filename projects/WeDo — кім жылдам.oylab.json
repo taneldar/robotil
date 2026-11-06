@@ -1,0 +1,278 @@
+{
+ "format": "oylab",
+ "version": 1,
+ "name": "WeDo — кім жылдам?",
+ "created": 1794600000000,
+ "updated": 1794600000000,
+ "chains": [
+  {
+   "x": 40,
+   "y": 40,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "scoreSet",
+     "v": 0
+    },
+    {
+     "type": "display",
+     "v": "Дайын бол!"
+    },
+    {
+     "type": "mood",
+     "v": 5
+    },
+    {
+     "type": "wait",
+     "v": 2
+    },
+    {
+     "type": "sendMsg",
+     "v": "Раунд"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 240,
+   "blocks": [
+    {
+     "type": "msgStart",
+     "v": "Раунд"
+    },
+    {
+     "type": "light",
+     "v": 0
+    },
+    {
+     "type": "display",
+     "v": "Күт..."
+    },
+    {
+     "type": "far",
+     "v": 40
+    },
+    {
+     "type": "waitRand",
+     "v": 6
+    },
+    {
+     "type": "ifNear",
+     "v": 20,
+     "body": [
+      {
+       "type": "sendMsg",
+       "v": "Ерте"
+      }
+     ]
+    },
+    {
+     "type": "else",
+     "body": [
+      {
+       "type": "sendMsg",
+       "v": "Жасыл"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 440,
+   "blocks": [
+    {
+     "type": "msgStart",
+     "v": "Жасыл"
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "ҚАЗІР!"
+    },
+    {
+     "type": "sound",
+     "v": 1
+    },
+    {
+     "type": "wait",
+     "v": 1
+    },
+    {
+     "type": "ifNear",
+     "v": 20,
+     "body": [
+      {
+       "type": "sendMsg",
+       "v": "Жылдам"
+      }
+     ]
+    },
+    {
+     "type": "else",
+     "body": [
+      {
+       "type": "sendMsg",
+       "v": "Кеш"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 640,
+   "blocks": [
+    {
+     "type": "msgStart",
+     "v": "Жылдам"
+    },
+    {
+     "type": "scoreAdd",
+     "v": 1
+    },
+    {
+     "type": "display",
+     "v": "Жарайсың!"
+    },
+    {
+     "type": "mood",
+     "v": 0
+    },
+    {
+     "type": "ifScore",
+     "v": 5,
+     "body": [
+      {
+       "type": "sendMsg",
+       "v": "Жеңіс"
+      }
+     ]
+    },
+    {
+     "type": "else",
+     "body": [
+      {
+       "type": "sendMsg",
+       "v": "Раунд"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 840,
+   "blocks": [
+    {
+     "type": "msgStart",
+     "v": "Кеш"
+    },
+    {
+     "type": "display",
+     "v": "Кеш қалдың"
+    },
+    {
+     "type": "mood",
+     "v": 2
+    },
+    {
+     "type": "sendMsg",
+     "v": "Раунд"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1040,
+   "blocks": [
+    {
+     "type": "msgStart",
+     "v": "Ерте"
+    },
+    {
+     "type": "display",
+     "v": "Ерте!"
+    },
+    {
+     "type": "mood",
+     "v": 7
+    },
+    {
+     "type": "scoreAdd",
+     "v": -1
+    },
+    {
+     "type": "sendMsg",
+     "v": "Раунд"
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1240,
+   "blocks": [
+    {
+     "type": "msgStart",
+     "v": "Жеңіс"
+    },
+    {
+     "type": "display",
+     "v": "ЖЕҢІС!"
+    },
+    {
+     "type": "light",
+     "v": 6
+    },
+    {
+     "type": "sound",
+     "v": 8
+    },
+    {
+     "type": "repeat",
+     "v": 3,
+     "body": [
+      {
+       "type": "fwd"
+      },
+      {
+       "type": "wait",
+       "v": 0.5
+      },
+      {
+       "type": "back"
+      },
+      {
+       "type": "wait",
+       "v": 0.5
+      }
+     ]
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "mood",
+     "v": 10
+    },
+    {
+     "type": "scoreSet",
+     "v": 0
+    },
+    {
+     "type": "wait",
+     "v": 2
+    },
+    {
+     "type": "sendMsg",
+     "v": "Раунд"
+    }
+   ]
+  }
+ ]
+}
