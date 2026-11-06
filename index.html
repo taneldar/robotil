@@ -349,7 +349,7 @@
   #exList { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .ex-card { display: grid; gap: 10px; align-content: start; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
   .ex-card h3 { margin: 0; font-size: 18px; display: flex; gap: 10px; align-items: center; }
-  .ex-card h3 .em { font-size: 28px; }
+  .ex-card h3 .em svg { width: 44px; height: 44px; display: block; }
   .ex-card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
   .ex-need { display: flex; flex-wrap: wrap; gap: 6px; }
   .ex-need span { font-size: 12px; padding: 3px 9px; border-radius: 10px; background: var(--bg); color: var(--text); }
@@ -367,7 +367,20 @@
   .exg-words { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
   .exg-words b { font-family: var(--font-num); font-size: 14px; background: var(--bg); padding: 1px 8px; border-radius: 6px; justify-self: start; }
   .g-hero { display: flex; gap: 16px; align-items: center; }
-  .g-em { font-size: 64px; line-height: 1; }
+  .g-em svg { width: 96px; height: 96px; display: block; }
+  .gpic { width: 52px; height: 52px; }
+  .gi { position: relative; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 14px; box-shadow: inset 0 -4px 0 rgba(0,0,0,.2); }
+  .gi .ic { width: 30px; height: 30px; fill: #fff; }
+  .gi em { position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 50%; background: #fff; color: #0055bf; border: 2px solid #0055bf; font: 800 12px/18px var(--font-ui); text-align: center; }
+  .gi.sm { width: 36px; height: 36px; border-radius: 10px; }
+  .gi.sm .ic { width: 22px; height: 22px; }
+  .gt svg { width: 56px; height: 56px; display: block; }
+  .gt.sm svg { width: 40px; height: 40px; }
+  .gbtn { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 14px; border-radius: 10px; color: #fff; box-shadow: inset 0 -4px 0 rgba(0,0,0,.25); font-weight: 700; font-size: 14px; margin: 4px 0; }
+  .gbtn .ic { width: 24px; height: 24px; fill: #fff; }
+  .gtilt { display: inline-block; } .gtilt .gpic { width: 34px; height: 34px; }
+  .gx { font-weight: 800; font-size: 18px; }
+  .gsay { padding: 6px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: 16px; font-weight: 700; white-space: nowrap; }
   .g-hero p { font-size: 20px; font-weight: 600; }
   .g-h { margin: 4px 0 -6px; font-size: 20px; }
   .g-need, .g-steps, .g-words, .g-play { display: grid; gap: 10px; }
@@ -376,11 +389,10 @@
   .g-words { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
   .g-play { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
   .g-need div, .g-steps div, .g-words div, .g-play div { display: grid; justify-items: center; align-content: start; gap: 4px; padding: 12px 8px; border-radius: 14px; background: var(--bg); text-align: center; font-size: 15px; font-weight: 600; line-height: 1.3; }
-  .g-need span, .g-steps span, .g-words span { font-size: 40px; line-height: 1.1; }
   .g-steps div { position: relative; }
   .g-steps b { position: absolute; left: 8px; top: 6px; width: 26px; height: 26px; border-radius: 50%; background: #fe8a18; color: #2b1700; line-height: 26px; font-size: 15px; }
   .g-words b { font-size: 22px; }
-  .g-play p { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 26px; line-height: 1.2; white-space: nowrap; }
+  .g-play p { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; min-height: 56px; }
   .g-play i { font-style: normal; font-size: 20px; color: var(--muted); }
   .g-adult { border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 14px; }
   .g-adult summary { cursor: pointer; font-weight: 700; font-size: 15px; }
@@ -550,6 +562,9 @@
   #feelBars i b { display: block; height: 100%; width: 0; background: #d6337f; transition: width .3s; }
   #screenText.face { font-size: 64px; line-height: 1.1; text-align: center; }
   .block .dir.mood { font-size: 17px; line-height: 1; }
+  .block .dir.mood svg.tumar { width: 24px; height: 24px; }
+  #screenText.face svg.tumar { display: block; width: 120px; height: 120px; margin: 0 auto; }
+  #feelBars span svg.tumar { display: block; width: 22px; height: 22px; }
 
   /* ---------- Блоктар: тегіс LEGO кірпіштері ---------- */
   /* Пішіні SVG-мен салынады: оң жақта томпақ құлақша, сол жақта ойық */
@@ -1119,7 +1134,7 @@ function paramControl(b, editable) {
     wrap.className = 'feel';
     const face = document.createElement('div');
     face.className = 'dir mood';
-    face.textContent = f.face;
+    face.innerHTML = tumar(f.tm);
     face.title = f.name + ' — сезімді ауыстыру үшін бас';
     const shownN = b.type === 'feelAdd' && b.v > 0 ? '+' + b.v : String(b.v);
     let num;
@@ -1147,7 +1162,7 @@ function paramControl(b, editable) {
     const m = moodOf(b.v);
     const el = document.createElement('div');
     el.className = 'dir mood';
-    el.textContent = m.face;
+    el.innerHTML = moodFace(b.v);
     el.title = m.name + ' — ауыстыру үшін бас';
     return el;
   }
@@ -1892,6 +1907,65 @@ const SOUNDS = [
   t => { [523, 587, 659, 698, 784].forEach((f, i) => tone(f, t + i * 0.16, 0.15, 'triangle', 0.2)); return 0.85; }, // 7 до-ре-ми
   t => { [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.12, i === 3 ? 0.45 : 0.11, 'square', 0.1)); return 0.9; }, // 8 жеңіс
 ];
+// ===== «Тұмар» — Oylab робот кейіпкері (қошқар мүйізді робот беті, SVG) =====
+const tumar = (() => {
+  const GOLD = '#f2b632', GOLD_D = '#c98a00';
+  const BODY = { def: ['#00a3c4', '#00728a'], angry: ['#e0563a', '#a8331b'], fear: ['#7cc7d8', '#4a97a8'], love: ['#00a3c4', '#00728a'] };
+  const INK = '#0b4f5e';
+  // қошқар мүйіз: басынан шығып, сыртқа иіліп, ішке қарай бұралады
+  function horn(side) {
+    const x = v => 80 + side * v;
+    return `<path d="M${x(8)},38 C${x(10)},18 ${x(30)},8 ${x(42)},16 C${x(54)},24 ${x(48)},40 ${x(36)},38 C${x(28)},37 ${x(28)},27 ${x(36)},27 C${x(41)},27 ${x(41)},33 ${x(37)},33"
+      fill="none" stroke="${GOLD_D}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M${x(8)},38 C${x(10)},18 ${x(30)},8 ${x(42)},16 C${x(54)},24 ${x(48)},40 ${x(36)},38 C${x(28)},37 ${x(28)},27 ${x(36)},27 C${x(41)},27 ${x(41)},33 ${x(37)},33"
+      fill="none" stroke="${GOLD}" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  const L = (d, w = 5, c = INK) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const eyeDot = (x, y, r = 7) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * 1.1}" fill="${INK}"/><circle cx="${x + r * 0.35}" cy="${y - r * 0.4}" r="${r * 0.32}" fill="#fff"/>`;
+  const arcUp = (x, y) => L(`M${x - 10},${y + 4} Q${x},${y - 10} ${x + 10},${y + 4}`);
+  const arcDown = (x, y) => L(`M${x - 10},${y} Q${x},${y + 8} ${x + 10},${y}`, 4.5);
+  const heart = (x, y, s = 1, c = '#e8405a') => `<path transform="translate(${x},${y}) scale(${s})" d="M0,6 C-12,-4 -6,-14 0,-7 C6,-14 12,-4 0,6 Z" fill="${c}"/>`;
+  const cheeks = () => `<ellipse cx="46" cy="98" rx="8" ry="4.5" fill="#ff8fa6" opacity=".6"/><ellipse cx="114" cy="98" rx="8" ry="4.5" fill="#ff8fa6" opacity=".6"/>`;
+  const drop = (x, y, s = 1) => `<path transform="translate(${x},${y}) scale(${s})" d="M0,-8 C4,-2 6,2 6,4 A6,6 0 0 1 -6,4 C-6,2 -4,-2 0,-8 Z" fill="#5fb6ff" stroke="#2f86d6" stroke-width="1.2"/>`;
+  const badge = (inner, c) => `<g transform="translate(128,124)"><circle r="15" fill="${c}" stroke="#fff" stroke-width="3"/>${inner}</g>`;
+  const FACES = {
+    neutral: () => eyeDot(59, 80) + eyeDot(101, 80) + L('M70,100 Q80,106 90,100', 4.5),
+    happy:   () => arcUp(59, 80) + arcUp(101, 80) + L('M66,98 Q80,112 94,98') + cheeks(),
+    surprised: () => eyeDot(59, 78, 9) + eyeDot(101, 78, 9) + L('M50,62 Q59,56 68,62', 4) + L('M92,62 Q101,56 110,62', 4) + `<ellipse cx="80" cy="102" rx="7" ry="8" fill="${INK}"/>`,
+    sad:     () => eyeDot(59, 82) + eyeDot(101, 82) + L('M48,70 L66,64', 4) + L('M112,70 L94,64', 4) + L('M68,106 Q80,96 92,106', 4.5) + drop(48, 98, 0.9),
+    angry:   () => eyeDot(59, 84, 6.5) + eyeDot(101, 84, 6.5) + L('M46,66 L70,76', 5.5) + L('M114,66 L90,76', 5.5) + L('M68,106 Q80,98 92,106', 5),
+    sleepy:  () => arcDown(59, 82) + arcDown(101, 82) + `<ellipse cx="80" cy="102" rx="4.5" ry="3.5" fill="${INK}"/>` +
+      `<g fill="#3d6fb8" font-family="Rubik,Segoe UI,Arial" font-weight="800"><text x="118" y="44" font-size="22">z</text><text x="134" y="30" font-size="16">z</text></g>`,
+    hello:   () => arcUp(59, 80) + eyeDot(101, 80) + L('M66,98 Q80,112 94,98') + cheeks() +
+      `<g transform="translate(140,86) rotate(-15)"><rect x="-9" y="-12" width="18" height="22" rx="8" fill="${GOLD}" stroke="${GOLD_D}" stroke-width="2"/></g>` + L('M146,64 q6,-4 4,-10', 3, GOLD_D) + L('M150,74 q8,-2 8,-9', 3, GOLD_D),
+    yes:     () => arcUp(59, 80) + arcUp(101, 80) + L('M66,98 Q80,112 94,98') + badge(L('M-7,0 L-2,5 L7,-5', 4, '#fff'), '#2fa84f'),
+    no:      () => L('M52,76 L64,82 L52,88', 4.5) + L('M108,76 L96,82 L108,88', 4.5) + L('M70,104 L90,104', 4.5) + badge(L('M-5,-5 L5,5 M5,-5 L-5,5', 4, '#fff'), '#e0563a'),
+    think:   () => eyeDot(63, 76, 6.5) + eyeDot(105, 76, 6.5) + L('M92,62 Q102,58 112,64', 4) + L('M72,104 Q80,100 90,103', 4.5) +
+      `<g fill="#fff" stroke="${INK}" stroke-width="2.5"><circle cx="132" cy="40" r="13"/><circle cx="118" cy="58" r="4"/></g><text x="132" y="47" text-anchor="middle" font-family="Rubik,Segoe UI,Arial" font-weight="800" font-size="19" fill="${INK}">?</text>`,
+    fear:    () => `<circle cx="59" cy="80" r="11" fill="#fff" stroke="${INK}" stroke-width="3"/><circle cx="101" cy="80" r="11" fill="#fff" stroke="${INK}" stroke-width="3"/><circle cx="59" cy="81" r="3.5" fill="${INK}"/><circle cx="101" cy="81" r="3.5" fill="${INK}"/>` +
+      L('M66,104 l5,-4 l5,4 l5,-4 l5,4 l5,-4', 3.5) + drop(126, 62, 1.1),
+    laugh:   () => L('M50,76 L64,82 L50,88', 4.5) + L('M110,76 L96,82 L110,88', 4.5) + `<path d="M64,96 L96,96 Q94,116 80,116 Q66,116 64,96 Z" fill="${INK}"/><path d="M70,108 Q80,104 90,108 Q86,115 80,115 Q74,115 70,108Z" fill="#ff8fa6"/>` + drop(40, 82, 0.8) + drop(120, 82, 0.8),
+    love:    () => heart(59, 80, 1.15) + heart(101, 80, 1.15) + L('M66,98 Q80,112 94,98') + cheeks() + heart(134, 40, 0.8, '#ff6f87') + heart(146, 58, 0.55, '#ff6f87'),
+  };
+  const MOOD_BODY = { angry: 'angry', fear: 'fear' };
+  function tumar(mood = 'neutral') {
+    const [body, dark] = BODY[MOOD_BODY[mood] || 'def'];
+    return `<svg class="tumar" viewBox="0 0 160 160" aria-hidden="true">
+      ${horn(-1)}${horn(1)}
+      <rect x="22" y="36" width="116" height="100" rx="34" fill="${body}"/>
+      <rect x="22" y="120" width="116" height="16" rx="8" fill="${dark}" opacity=".35"/>
+      <path d="M80,40 L89,48 L80,56 L71,48 Z" fill="${GOLD}" stroke="${GOLD_D}" stroke-width="1.5"/>
+      <circle cx="80" cy="48" r="2.5" fill="${GOLD_D}"/>
+      <rect x="34" y="60" width="92" height="58" rx="22" fill="#ffffff"/>
+      ${(FACES[mood] || FACES.neutral)()}
+    </svg>`;
+  }
+  return tumar;
+})();
+// MOODS ретімен: әр «Көңіл-күй» дыбысының беті
+const TUMAR_OF = ['happy', 'surprised', 'sad', 'angry', 'sleepy', 'hello', 'yes', 'no', 'think', 'fear', 'laugh', 'love'];
+const moodFace = v => tumar(TUMAR_OF[v] ?? 'neutral');
+
 // ===== Көңіл-күй дыбыстары: роботтың «бип-буп» тілі =====
 // Әр дыбыс — жиілігі сырғып өзгеретін бірнеше «буын». Әр ойнаған сайын биіктігі мен ұзақтығы
 // сәл басқаша шығады — робот тірі сияқты, бір дыбысты жаттап қайталамайды.
@@ -2099,12 +2173,17 @@ function setScreen(text, face = false) {
   $('screenText').textContent = text;
   $('screenText').classList.toggle('face', face);
 }
+function setScreenFace(svg) {
+  $('screen').hidden = false;
+  $('screenText').innerHTML = svg;
+  $('screenText').classList.add('face');
+}
 
 // ===== Мінез: роботтың 3 сезімі =====
 // Сезімді тек баланың блоктары өзгертеді («Сезім +2»); өздігінен тек баяу басылады — әр 5 с сайын 1-ге.
 // «Сезім жеткенде» бір рет қана іске қосылады: қайта қосылу үшін сезім 3-ке төмендеп, қайта көтерілуі керек.
 // «Үнсіз тұрса» — бала команда бермесе және мотор тоқтап тұрса (робот өз реакциясында қозғалса — есепке алмаймыз).
-const FEELINGS = [{ face: '😠', name: 'Ашу' }, { face: '😊', name: 'Қуаныш' }, { face: '😴', name: 'Ұйқы' }];
+const FEELINGS = [{ face: '😠', tm: 'angry', name: 'Ашу' }, { face: '😊', tm: 'happy', name: 'Қуаныш' }, { face: '😴', tm: 'sleepy', name: 'Ұйқы' }];
 const feelOf = f => ({ ...(FEELINGS[f] ?? FEELINGS[0]), i: FEELINGS[f] ? f : 0 });
 const FEEL_MAX = 10, FEEL_DECAY_MS = 5000, FEEL_REARM = 3;
 const ACTIVE_HATS = ['voiceStart', 'keyStart', 'aiStart'];
@@ -2145,7 +2224,7 @@ function renderFeelings() {
   if (!on) return;
   if (aiArmed || isRunning()) $('screen').hidden = false;
   if (el.children.length !== FEELINGS.length) {
-    el.innerHTML = FEELINGS.map(f => `<div title="${f.name}"><span>${f.face}</span><i><b></b></i><span></span></div>`).join('');
+    el.innerHTML = FEELINGS.map(f => `<div title="${f.name}"><span>${tumar(f.tm)}</span><i><b></b></i><span></span></div>`).join('');
   }
   [...el.children].forEach((row, i) => {
     row.querySelector('b').style.width = feelings[i] * 10 + '%';
@@ -2203,7 +2282,7 @@ async function exec(b) {
     case 'sound':   await sleep(playSound(b.v) * 1000); break;
     case 'display': setScreen(b.v); break;
     case 'feelAdd': setFeeling(b.f, feelings[feelOf(b.f).i] + b.v); break;
-    case 'mood':    setScreen(moodOf(b.v).face, true); await sleep(playMood(b.v) * 1000); break;
+    case 'mood':    setScreenFace(moodFace(b.v)); await sleep(playMood(b.v) * 1000); break;
     case 'wait':    await sleep(b.v * 1000); break;
     case 'near':    await waitUntil(() => distance !== null && distance < b.v); break;
     case 'far':     await waitUntil(() => distance !== null && distance > b.v); break;
@@ -3198,18 +3277,26 @@ $('homeNew').addEventListener('click', () => {
 });
 // ===== Дайын мысалдар: оқушы мұғалімсіз оқып, ашып, іске қоса алатындай =====
 // guide: оқушыға — суретті карточкалар (сөз аз), adult — мұғалім мен ата-анаға толық мәтін
-const START_STEPS = [['🟢', 'Хабтың түймесін бас'], ['🔵', 'Bluetooth батырмасын бас'], ['▶️', '«Іске қос» бас'], ['🗣️', 'Роботқа сөйле!']];
+// Нұсқаудағы суреттер — смайлик емес: бағдарламаның өз иконкалары, нақты батырмалары және «Тұмар»
+const GC = { motor: '#0055bf', sensor: '#c91a09', mic: '#008f9b', flow: '#f8bb3d', mood: '#d6337f', gray: '#6c757d' };
+const START_STEPS = [[{ hubBtn: 1 }, 'Хабтың түймесін бас'], [{ btn: 'bt', c: '#0055bf' }, 'Bluetooth батырмасын бас'], [{ btn: 'play', c: '#237841', txt: 'Іске қос' }, '«Іске қос» бас'], [{ t: 'hello' }, 'Роботқа сөйле!']];
+const W_MOVE = {
+  'алға': { i: 'arrow', c: GC.motor, r: 0 }, 'артқа': { i: 'arrow', c: GC.motor, r: 180 }, 'солға': { i: 'arrow', c: GC.motor, r: 270 }, 'оңға': { i: 'arrow', c: GC.motor, r: 90 },
+  'тоқта': { i: 'stop', c: GC.sensor }, 'жылдам': { i: 'bolt', c: GC.flow }, 'баяу': { i: 'timer', c: GC.gray }, 'биле': { i: 'loop', c: GC.mood },
+  'рақмет': { t: 'happy' }, 'кешір': { t: 'sad' }, 'сәлем': { t: 'hello' },
+};
 const EXAMPLES = [
   {
-    id: 'wedo-mood', kit: 'wedo', em: '🤖', file: 'WeDo — мінезді робот.oylab.json',
+    id: 'wedo-mood', kit: 'wedo', tm: 'hello', file: 'WeDo — мінезді робот.oylab.json',
     title: 'Мінезді робот',
-    short: 'Сөйлесетін робот. Қуанады 😊, ашуланады 😠, ұйықтайды 😴.',
+    short: 'Сөйлесетін робот: қуанады, ашуланады, ұйықтап та қалады.',
     need: ['WeDo 2.0 хабы', '1 мотор', 'қашықтық немесе еңіс датчигі', 'микрофон'],
     guide: {
       lead: 'Роботқа сөйле — ол тыңдайды!',
-      need: [['🟦', 'Хаб'], ['⚙️', 'Мотор'], ['📡', 'Датчик'], ['🎤', 'Микрофон']],
-      words: [['алға', '⬆️'], ['артқа', '⬇️'], ['тоқта', '✋'], ['жылдам', '🐇'], ['баяу', '🐢'], ['биле', '💃'], ['рақмет', '😊'], ['кешір', '🙏'], ['сәлем', '👋']],
-      play: [['✋ ✋ ✋', '😠', 'Қолыңды датчикке 3 рет жақындат'], ['🙏', '😊', '«Кешір» де'], ['😊 😊 😊', '😍', '3 рет «рақмет» де'], ['🤫', '😴', 'Ұзақ үндеме']],
+      need: [[{ hub: 'wedo' }, 'Хаб'], [{ i: 'turn', c: GC.motor }, 'Мотор'], [{ i: 'radar', c: GC.sensor }, 'Датчик'], [{ i: 'mic', c: GC.mic }, 'Микрофон']],
+      words: ['алға', 'артқа', 'тоқта', 'жылдам', 'баяу', 'биле', 'рақмет', 'кешір', 'сәлем'],
+      play: [[[{ i: 'radar', c: GC.sensor, n: 3 }], 'angry', 'Қолыңды датчикке 3 рет жақындат'], [[{ say: 'кешір' }], 'happy', '«Кешір» де'],
+        [[{ say: 'рақмет', n: 3 }], 'love', '3 рет «рақмет» де'], [[{ i: 'timer', c: GC.gray }], 'sleepy', 'Ұзақ үндеме']],
     },
     adult: `<p>Бағдарламада 18 тізбек бар. Робот сөзге жауап береді, ал үш сезімі (ашу, қуаныш, ұйқы) бала не айтып, не істегеніне қарай өзгереді. Экрандағы үш жолақ сезімдерді көрсетеді.</p>
       <p><b>Құрастыру:</b> Майло немесе кез келген бір моторлы робот. Мотор — бір портқа, қашықтық немесе еңіс датчигі — екіншісіне. Датчик болмаса да, сөзбен басқару жұмыс істейді.</p>
@@ -3218,15 +3305,16 @@ const EXAMPLES = [
       <p><b>Дауыс танылмаса:</b> сөзді Google таниды, интернет керек. Шулы сыныпта AI бөліміндегі «Сөздер» моделіне әр сөзді баланың өз дауысымен 3 рет жазыңыз — сонда интернетсіз де таниды.</p>`,
   },
   {
-    id: 'ess-mood', kit: 'essential', em: '🚗', file: 'Essential — мінезді робот.oylab.json',
+    id: 'ess-mood', kit: 'essential', tm: 'laugh', file: 'Essential — мінезді робот.oylab.json',
     title: 'Мінезді робот',
-    short: 'Екі дөңгелекті сөйлесетін робот. Еңкейтсең қорқады 😱 не күледі 😂.',
+    short: 'Екі дөңгелекті сөйлесетін робот. Еңкейтсең қорқады не күледі.',
     need: ['SPIKE Essential хабы', '2 мотор (A — сол, B — оң)', 'микрофон'],
     guide: {
       lead: 'Роботқа сөйле — ол тыңдайды!',
-      need: [['🟨', 'Хаб'], ['⚙️', 'Мотор A'], ['⚙️', 'Мотор B'], ['🎤', 'Микрофон']],
-      words: [['алға', '⬆️'], ['артқа', '⬇️'], ['солға', '⬅️'], ['оңға', '➡️'], ['тоқта', '✋'], ['биле', '💃'], ['рақмет', '😊'], ['кешір', '🙏'], ['сәлем', '👋']],
-      play: [['↙️', '😱', 'Роботты солға еңкейт'], ['↘️', '😂', 'Оңға еңкейт'], ['↙️ ↙️ ↙️', '😠', 'Солға көп еңкейт'], ['🙏', '😊', '«Кешір» де'], ['🤫', '😴', 'Ұзақ үндеме']],
+      need: [[{ hub: 'essential' }, 'Хаб'], [{ i: 'turn', c: GC.motor, tag: 'A' }, 'Мотор A'], [{ i: 'turn', c: GC.motor, tag: 'B' }, 'Мотор B'], [{ i: 'mic', c: GC.mic }, 'Микрофон']],
+      words: ['алға', 'артқа', 'солға', 'оңға', 'тоқта', 'биле', 'рақмет', 'кешір', 'сәлем'],
+      play: [[[{ tilt: -28 }], 'fear', 'Роботты солға еңкейт'], [[{ tilt: 28 }], 'laugh', 'Оңға еңкейт'],
+        [[{ tilt: -28, n: 3 }], 'angry', 'Солға көп еңкейт'], [[{ say: 'кешір' }], 'happy', '«Кешір» де'], [[{ i: 'timer', c: GC.gray }], 'sleepy', 'Ұзақ үндеме']],
     },
     adult: `<p>Бағдарламада 17 тізбек бар. Робот сөзге жауап береді, ал үш сезімі (ашу, қуаныш, ұйқы) бала не айтып, не істегеніне қарай өзгереді. Экрандағы үш жолақ сезімдерді көрсетеді.</p>
       <p><b>Құрастыру:</b> екі дөңгелекті арба: сол дөңгелектің моторы — A портқа, оң дөңгелектің моторы — B портқа. Еңісті хабтың ішкі датчигі сезеді, бөлек датчик керек емес. Хабта динамик жоқ, дыбыстар компьютерден шығады.</p>
@@ -3235,18 +3323,34 @@ const EXAMPLES = [
       <p><b>Дауыс танылмаса:</b> сөзді Google таниды, интернет керек. Шулы сыныпта AI бөліміндегі «Сөздер» моделіне әр сөзді баланың өз дауысымен 3 рет жазыңыз — сонда интернетсіз де таниды.</p>`,
   },
 ];
+// хаб суреті: WeDo — ақ корпус, қара табан; Essential — сары-ақ
+const hubPic = kind => {
+  const [top, base] = kind === 'essential' ? ['#ffd23f', '#e0a800'] : ['#f4f4f4', '#5f6266'];
+  return `<svg class="gpic" viewBox="0 0 48 48"><rect x="6" y="12" width="36" height="28" rx="7" fill="${base}"/><rect x="6" y="9" width="36" height="22" rx="7" fill="${top}" stroke="#2b2b2b" stroke-width="1.5"/>
+    <circle cx="24" cy="20" r="6" fill="#3aa34a" stroke="#1f6b2b" stroke-width="1.5"/><circle cx="24" cy="20" r="2.6" fill="#7fd48a"/></svg>`;
+};
+function gIcon(o, size = '') {
+  if (o.t) return `<span class="gt${size}">${tumar(o.t)}</span>`;
+  if (o.hub) return hubPic(o.hub);
+  if (o.tilt) return `<span class="gtilt" style="transform:rotate(${o.tilt}deg)">${hubPic('essential')}</span>`;
+  if (o.hubBtn) return `<svg class="gpic" viewBox="0 0 48 48"><circle cx="24" cy="24" r="17" fill="#3aa34a" stroke="#1f6b2b" stroke-width="3"/><circle cx="24" cy="24" r="7" fill="#7fd48a"/></svg>`;
+  if (o.btn) return `<span class="gbtn" style="background:${o.c}">${icon(o.btn)}${o.txt ? `<span>${o.txt}</span>` : ''}</span>`;
+  if (o.say) return `<span class="gsay">«${o.say}»</span>`;
+  return `<span class="gi${size}" style="background:${o.c}">${icon(o.i, 'ic', o.r ? `transform:rotate(${o.r}deg)` : '')}${o.tag ? `<em>${o.tag}</em>` : ''}</span>`;
+}
+const gRepeat = o => o.say ? gIcon(o) + (o.n > 1 ? `<span class="gx">×${o.n}</span>` : '') : Array.from({ length: o.n || 1 }, () => gIcon(o, ' sm')).join('');
 function guideHTML(e) {
   const g = e.guide;
-  return `<div class="g-hero"><span class="g-em">${e.em}</span><div><h2>${e.title}</h2><p>${g.lead}</p></div></div>
-    <h3 class="g-h">🧰 Керек</h3>
-    <div class="g-need">${g.need.map(([i, t]) => `<div><span>${i}</span>${t}</div>`).join('')}</div>
-    <h3 class="g-h">▶️ Бастау</h3>
-    <div class="g-steps">${START_STEPS.map(([i, t], n) => `<div><b>${n + 1}</b><span>${i}</span>${t}</div>`).join('')}</div>
-    <h3 class="g-h">🗣️ Айт</h3>
-    <div class="g-words">${g.words.map(([w, i]) => `<div><span>${i}</span><b>${w}</b></div>`).join('')}</div>
-    <h3 class="g-h">🎮 Ойна</h3>
-    <div class="g-play">${g.play.map(([x, y, t]) => `<div><p><span>${x}</span><i>➜</i><span>${y}</span></p>${t}</div>`).join('')}</div>
-    <details class="g-adult"><summary>👩‍🏫 Мұғалімге және ата-анаға</summary>${e.adult}</details>`;
+  return `<div class="g-hero"><span class="g-em">${tumar(e.tm)}</span><div><h2>${e.title}</h2><p>${g.lead}</p></div></div>
+    <h3 class="g-h">Керек</h3>
+    <div class="g-need">${g.need.map(([o, t]) => `<div>${gIcon(o)}${t}</div>`).join('')}</div>
+    <h3 class="g-h">Бастау</h3>
+    <div class="g-steps">${START_STEPS.map(([o, t], n) => `<div><b>${n + 1}</b>${gIcon(o)}${t}</div>`).join('')}</div>
+    <h3 class="g-h">Айт</h3>
+    <div class="g-words">${g.words.map(w => `<div>${gIcon(W_MOVE[w])}<b>${w}</b></div>`).join('')}</div>
+    <h3 class="g-h">Ойна</h3>
+    <div class="g-play">${g.play.map(([xs, face, t]) => `<div><p>${xs.map(gRepeat).join('')}<i>➜</i>${gIcon({ t: face })}</p>${t}</div>`).join('')}</div>
+    <details class="g-adult"><summary>Мұғалімге және ата-анаға</summary>${e.adult}</details>`;
 }
 let exKit = hubKind === 'essential' ? 'essential' : 'wedo';
 let exOpen = null;
@@ -3258,7 +3362,7 @@ function renderExamples() {
   items.forEach(e => {
     const card = document.createElement('article');
     card.className = 'ex-card';
-    card.innerHTML = `<h3><span class="em">${e.em}</span>${e.title}</h3><p>${e.short}</p>
+    card.innerHTML = `<h3><span class="em">${tumar(e.tm)}</span>${e.title}</h3><p>${e.short}</p>
       <div class="ex-need">${e.need.map(n => `<span>${n}</span>`).join('')}</div>
       <div class="ex-btns"><button class="read">Нұсқауды оқу</button><button class="go">Ашу</button></div>`;
     card.querySelector('.read').addEventListener('click', () => showGuide(e));
