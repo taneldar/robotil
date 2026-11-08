@@ -1,0 +1,690 @@
+{
+ "format": "oylab",
+ "version": 1,
+ "name": "WeDo — ақылды желдеткіш",
+ "created": 1794118466391,
+ "updated": 1794118466391,
+ "chains": [
+  {
+   "x": 40,
+   "y": 40,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "speed",
+     "v": 5
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Сәлем!"
+    },
+    {
+     "type": "mood",
+     "v": 5
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 220,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "near",
+       "v": 40
+      },
+      {
+       "type": "ifFeel",
+       "v": 5,
+       "f": 2,
+       "body": [
+        {
+         "type": "feelAdd",
+         "v": -10,
+         "f": 2
+        },
+        {
+         "type": "display",
+         "v": "Ояндым!"
+        },
+        {
+         "type": "mood",
+         "v": 1
+        }
+       ]
+      },
+      {
+       "type": "fwd"
+      },
+      {
+       "type": "display",
+       "v": "Сәлем!"
+      },
+      {
+       "type": "mood",
+       "v": 0
+      },
+      {
+       "type": "far",
+       "v": 60
+      },
+      {
+       "type": "wait",
+       "v": 5
+      },
+      {
+       "type": "ifNear",
+       "v": 40,
+       "body": [
+        {
+         "type": "display",
+         "v": "Сен келдің!"
+        }
+       ]
+      },
+      {
+       "type": "else",
+       "body": [
+        {
+         "type": "stop"
+        },
+        {
+         "type": "display",
+         "v": "Қайдасың?"
+        },
+        {
+         "type": "mood",
+         "v": 8
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 428,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "near",
+       "v": 8
+      },
+      {
+       "type": "stop"
+      },
+      {
+       "type": "light",
+       "v": 0
+      },
+      {
+       "type": "display",
+       "v": "Абайла!"
+      },
+      {
+       "type": "mood",
+       "v": 9
+      },
+      {
+       "type": "feelAdd",
+       "v": 3,
+       "f": 0
+      },
+      {
+       "type": "wait",
+       "v": 1
+      },
+      {
+       "type": "stop"
+      },
+      {
+       "type": "far",
+       "v": 20
+      },
+      {
+       "type": "light",
+       "v": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 640,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "қосыл/қос/старт/давай"
+    },
+    {
+     "type": "ifFeel",
+     "v": 7,
+     "f": 0,
+     "body": [
+      {
+       "type": "display",
+       "v": "Жоқ!"
+      },
+      {
+       "type": "mood",
+       "v": 7
+      }
+     ]
+    },
+    {
+     "type": "else",
+     "body": [
+      {
+       "type": "ifFeel",
+       "v": 5,
+       "f": 2,
+       "body": [
+        {
+         "type": "display",
+         "v": "Хррр..."
+        },
+        {
+         "type": "mood",
+         "v": 4
+        }
+       ]
+      },
+      {
+       "type": "else",
+       "body": [
+        {
+         "type": "ifNear",
+         "v": 60,
+         "body": [
+          {
+           "type": "fwd"
+          },
+          {
+           "type": "light",
+           "v": 3
+          },
+          {
+           "type": "display",
+           "v": "Қосылдым"
+          },
+          {
+           "type": "mood",
+           "v": 6
+          }
+         ]
+        },
+        {
+         "type": "else",
+         "body": [
+          {
+           "type": "display",
+           "v": "Қасыма кел"
+          },
+          {
+           "type": "mood",
+           "v": 8
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 844,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "сөн/тоқта/выключи/стоп"
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "display",
+     "v": "Сөндім"
+    },
+    {
+     "type": "mood",
+     "v": 6
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1012,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "күшті/қаттырақ/сильнее"
+    },
+    {
+     "type": "ifFeel",
+     "v": 7,
+     "f": 0,
+     "body": [
+      {
+       "type": "display",
+       "v": "Жоқ!"
+      },
+      {
+       "type": "mood",
+       "v": 7
+      }
+     ]
+    },
+    {
+     "type": "else",
+     "body": [
+      {
+       "type": "speed",
+       "v": 9
+      },
+      {
+       "type": "display",
+       "v": "Күштірек!"
+      },
+      {
+       "type": "mood",
+       "v": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1176,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "баяу/әлсіз/ақырын/слабее/медленно"
+    },
+    {
+     "type": "speed",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Баяу"
+    },
+    {
+     "type": "mood",
+     "v": 6
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1320,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "ыстық/жарко"
+    },
+    {
+     "type": "speed",
+     "v": 10
+    },
+    {
+     "type": "fwd"
+    },
+    {
+     "type": "light",
+     "v": 0
+    },
+    {
+     "type": "display",
+     "v": "Салқындатам!"
+    },
+    {
+     "type": "mood",
+     "v": 0
+    },
+    {
+     "type": "light",
+     "v": 3
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1464,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "суық/тоңдым/холодно"
+    },
+    {
+     "type": "speed",
+     "v": 3
+    },
+    {
+     "type": "light",
+     "v": 4
+    },
+    {
+     "type": "display",
+     "v": "Жарайды"
+    },
+    {
+     "type": "mood",
+     "v": 2
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1608,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "ұйықта/спи/спать"
+    },
+    {
+     "type": "display",
+     "v": "Қайырлы түн"
+    },
+    {
+     "type": "speed",
+     "v": 3
+    },
+    {
+     "type": "wait",
+     "v": 2
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "feelAdd",
+     "v": 10,
+     "f": 2
+    }
+   ]
+  },
+  {
+   "x": 1854,
+   "y": 40,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "сәлем/оян/привет/проснись"
+    },
+    {
+     "type": "feelAdd",
+     "v": -10,
+     "f": 2
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Ояндым!"
+    },
+    {
+     "type": "mood",
+     "v": 5
+    }
+   ]
+  },
+  {
+   "x": 1854,
+   "y": 184,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "рақмет/рахмет/спасибо"
+    },
+    {
+     "type": "feelAdd",
+     "v": 3,
+     "f": 1
+    },
+    {
+     "type": "mood",
+     "v": 11
+    }
+   ]
+  },
+  {
+   "x": 1854,
+   "y": 328,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "жаман/ақымақ/плохой/дурак"
+    },
+    {
+     "type": "feelAdd",
+     "v": 10,
+     "f": 0
+    }
+   ]
+  },
+  {
+   "x": 1854,
+   "y": 472,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "кешір/кешіріңіз/прости/извини"
+    },
+    {
+     "type": "feelAdd",
+     "v": -10,
+     "f": 0
+    },
+    {
+     "type": "light",
+     "v": 3
+    },
+    {
+     "type": "display",
+     "v": "Жарайды"
+    },
+    {
+     "type": "mood",
+     "v": 0
+    }
+   ]
+  },
+  {
+   "x": 1854,
+   "y": 652,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "ifNear",
+       "v": 40,
+       "body": [
+        {
+         "type": "feelAdd",
+         "v": 1,
+         "f": 1
+        }
+       ]
+      },
+      {
+       "type": "wait",
+       "v": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 1854,
+   "y": 836,
+   "blocks": [
+    {
+     "type": "feelStart",
+     "v": 10,
+     "f": 1
+    },
+    {
+     "type": "light",
+     "v": 6
+    },
+    {
+     "type": "display",
+     "v": "Жақсы көрем!"
+    },
+    {
+     "type": "mood",
+     "v": 11
+    },
+    {
+     "type": "light",
+     "v": 3
+    }
+   ]
+  },
+  {
+   "x": 1854,
+   "y": 980,
+   "blocks": [
+    {
+     "type": "feelStart",
+     "v": 10,
+     "f": 0
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 0
+    },
+    {
+     "type": "display",
+     "v": "Мазалама!"
+    },
+    {
+     "type": "mood",
+     "v": 3
+    },
+    {
+     "type": "back"
+    },
+    {
+     "type": "wait",
+     "v": 2
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "display",
+     "v": "Кешір де"
+    }
+   ]
+  },
+  {
+   "x": 1854,
+   "y": 1124,
+   "blocks": [
+    {
+     "type": "idleStart",
+     "v": 30
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "feelAdd",
+     "v": 10,
+     "f": 2
+    }
+   ]
+  },
+  {
+   "x": 1854,
+   "y": 1268,
+   "blocks": [
+    {
+     "type": "feelStart",
+     "v": 10,
+     "f": 2
+    },
+    {
+     "type": "stop"
+    },
+    {
+     "type": "light",
+     "v": 5
+    },
+    {
+     "type": "display",
+     "v": "Хррр..."
+    },
+    {
+     "type": "mood",
+     "v": 4
+    }
+   ]
+  },
+  {
+   "x": 1854,
+   "y": 1448,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "ifFeel",
+       "v": 3,
+       "f": 2,
+       "body": [
+        {
+         "type": "feelAdd",
+         "v": 1,
+         "f": 2
+        }
+       ]
+      },
+      {
+       "type": "wait",
+       "v": 4
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
