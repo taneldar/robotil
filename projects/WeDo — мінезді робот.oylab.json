@@ -285,33 +285,52 @@
      "body": [
       {
        "type": "near",
-       "v": 15
+       "v": 12
       },
       {
        "type": "stop"
       },
       {
-       "type": "feelAdd",
-       "f": 0,
-       "v": 5
+       "type": "light",
+       "v": 1
+      },
+      {
+       "type": "display",
+       "v": "Хи-хи!"
       },
       {
        "type": "mood",
-       "v": 9
+       "v": 10
+      },
+      {
+       "type": "fwd"
+      },
+      {
+       "type": "wait",
+       "v": 0.5
       },
       {
        "type": "back"
       },
       {
        "type": "wait",
-       "v": 1
+       "v": 0.5
       },
       {
        "type": "stop"
       },
       {
+       "type": "feelAdd",
+       "v": 2,
+       "f": 1
+      },
+      {
        "type": "far",
-       "v": 30
+       "v": 25
+      },
+      {
+       "type": "light",
+       "v": 3
       }
      ]
     }
@@ -543,6 +562,73 @@
     {
      "type": "mood",
      "v": 4
+    }
+   ]
+  },
+  {
+   "x": 40,
+   "y": 1840,
+   "blocks": [
+    {
+     "type": "start"
+    },
+    {
+     "type": "repeat",
+     "v": 0,
+     "body": [
+      {
+       "type": "loud",
+       "v": 9
+      },
+      {
+       "type": "stop"
+      },
+      {
+       "type": "light",
+       "v": 2
+      },
+      {
+       "type": "display",
+       "v": "Қорқамын!"
+      },
+      {
+       "type": "mood",
+       "v": 9
+      },
+      {
+       "type": "back"
+      },
+      {
+       "type": "wait",
+       "v": 1
+      },
+      {
+       "type": "stop"
+      },
+      {
+       "type": "wait",
+       "v": 1
+      },
+      {
+       "type": "light",
+       "v": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "x": 1400,
+   "y": 1840,
+   "blocks": [
+    {
+     "type": "voiceStart",
+     "v": "жаман/ақымақ/плохой/дурак"
+    },
+    {
+     "type": "feelAdd",
+     "v": 10,
+     "f": 0
     }
    ]
   }
