@@ -1320,6 +1320,7 @@ function makeLayers(container) {
 
 // Тізбекті қабаттарға салады. mode: 'board' (алаң) немесе 'ghost' (сүйреліп жүрген блоктар)
 let blockEls = new Map();
+const litBlocks = new Set(); // қазір орындалып жатқан блоктар
 function drawList(layers, list, x, y, mode) {
   const editable = mode === 'board' && !drag?.active;
   const container = layers.face;
@@ -1383,6 +1384,7 @@ function render() {
   sizer.style.height = (h * zoom) + 'px';
   sizer.style.backgroundSize = `${24 * zoom}px ${24 * zoom}px`; // негіз тақтасының дөңестері
   $('hint').style.display = !d && chains.every(c => c.blocks.length <= 1) ? 'block' : 'none';
+  for (const b of litBlocks) blockEls.get(b)?.classList.add('running');
 }
 
 function renderPalette() {
@@ -1407,10 +1409,11 @@ function renderPalette() {
 let drag = null;
 
 function onPointerDown(e, from, ref) {
-  if (isRunning()) return;
+  const locked = isRunning();
+  if (locked && from === 'palette') return;
   if (e.button > 0 || e.target.closest('input')) return;
   e.stopPropagation(); // жақтау ішіндегі блокты ұстағанда жақтаудың өзі ұсталмасын
-  drag = { from, ref, x0: e.clientX, y0: e.clientY, active: false, el: e.currentTarget };
+  drag = { from, ref, x0: e.clientX, y0: e.clientY, active: false, el: e.currentTarget, locked };
 }
 
 // Тізбектің ортасынан ұстасаң — сол блок пен одан кейінгілері бірге ажырайды (WeDo/Scratch-тегідей)
@@ -1520,6 +1523,7 @@ window.addEventListener('pointermove', e => {
   if (!drag) return;
   if (!drag.active) {
     if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
+    if (drag.locked) { drag.moved = true; return; } // жүріп тұрғанда сүйремейміз
     startDrag();
   }
   drag.ghost.style.left = (e.clientX - drag.dx * zoom) + 'px';
@@ -1560,7 +1564,7 @@ window.addEventListener('pointerup', e => {
       }
     }
     // алаңнан тыс тасталса — блоктар өшіріледі
-  } else {
+  } else if (!d.moved) {
     onTap(d);
   }
   render();
@@ -1578,6 +1582,8 @@ window.addEventListener('pointercancel', () => {
   render();
 });
 
+// «Мотор осылай» ⇄ «Мотор анылай»; көлік: алға → оңға → артқа → солға → алға
+const TAP_SWAP = { fwd: 'back', back: 'fwd', driveFwd: 'turnRight', turnRight: 'driveBack', driveBack: 'turnLeft', turnLeft: 'driveFwd' };
 function onTap(d) {
   if (d.from === 'palette') {
     const b = newBlock(d.ref);
@@ -1591,7 +1597,8 @@ function onTap(d) {
   }
   const b = d.ref.list[d.ref.index];
   activeChain = chains.find(c => c.blocks === d.ref.list) || activeChain;
-  if (isHat(b)) return startChains([chains.find(c => c.blocks[0] === b)]);
+  if (isHat(b)) return d.locked ? undefined : startChains([chains.find(c => c.blocks[0] === b)]);
+  if (TAP_SWAP[b.type]) { b.type = TAP_SWAP[b.type]; return; }
   const kind = BLOCKS[b.type].param?.kind;
   if (kind === 'color') {
     b.v = (b.v + 1) % COLORS.length;
@@ -2401,8 +2408,8 @@ async function execList(list, from = 0) {
   let lastIf = null; // алдындағы «Егер» нәтижесі — «Әйтпесе» үшін
   for (let i = from; i < list.length && !stopReq; i++) {
     const b = list[i];
-    const el = blockEls.get(b);
-    el?.classList.add('running');
+    litBlocks.add(b);
+    blockEls.get(b)?.classList.add('running');
     if (b.type === 'repeat') {
       // v = 0 — шексіз, әйтпесе v рет
       for (let n = 0; !stopReq && (b.v === 0 || n < b.v); n++) {
@@ -2428,7 +2435,8 @@ async function execList(list, from = 0) {
       await exec(b);
       await sleep(250); // блок жанғаны көрінсін
     }
-    el?.classList.remove('running');
+    litBlocks.delete(b);
+    blockEls.get(b)?.classList.remove('running');
   }
 }
 
