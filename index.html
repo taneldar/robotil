@@ -2317,6 +2317,21 @@ function stopMic() {
   micBands = MIC_BANDS.map(() => 0);
   renderMic();
 }
+// «Дауыс деңгейі» сөзбен басқарумен бірге: команда айтқанда сөздің өзі қатты естіліп («алға» 9-дан асады),
+// «Қорқамын!» тізбегі роботты тоқтататын. Сондықтан сөз тыңдап тұрғанда тек қысқа соққыны (шапалақ,
+// 0,25 с-тан қысқа) «қатты» деп санаймыз, ұзақ созылған дыбыс — сөз, оны елемейміз.
+const micHist = [];
+const LOUD_BURST_MAX = 5; // 5 өлшем × 50 мс = 0,25 с
+function isLoud(v) {
+  if (micLevel === null) return false;
+  if (!(aiArmed && voiceWanted)) return micLevel >= v;
+  let j = micHist.length - 1;
+  while (j >= 0 && micHist[j] < v) j--;              // соңғы қатты өлшем
+  if (j < 0 || j === micHist.length - 1 || j < micHist.length - 4) return false; // әлі созылып тұр не ертеде болған
+  let k = j;
+  while (k >= 0 && micHist[k] >= v) k--;
+  return k >= 0 && j - k <= LOUD_BURST_MAX;           // қысқа соққы — шапалақ
+}
 function readMic() {
   if (!mic) return;
   mic.analyser.getFloatTimeDomainData(mic.time);
@@ -2324,6 +2339,9 @@ function readMic() {
   for (const v of mic.time) s += v * v;
   const db = 20 * Math.log10(Math.sqrt(s / mic.time.length) || 1e-8);
   micLevel = Math.max(0, Math.min(10, (db + 60) / 5)); // −60 дБ → 0, −10 дБ → 10
+  if (hearingSelf()) micLevel = 0; // планшеттің өз дыбысы — «шу» емес
+  micHist.push(micLevel);
+  if (micHist.length > 12) micHist.shift();
   mic.analyser.getByteFrequencyData(mic.freq);
   const hz = audioCtx.sampleRate / 2 / mic.freq.length;
   micBands = MIC_BANDS.map(([lo, hi]) => {
@@ -2460,7 +2478,7 @@ function condNow(b) {
   switch (b.type) {
     case 'ifNear':   return distance !== null && distance < b.v;
     case 'ifTilt':   return tiltDir() === TILT_DIRS[b.v].key;
-    case 'ifLoud':   return micLevel !== null && micLevel >= b.v;
+    case 'ifLoud':   return isLoud(b.v);
     case 'ifRandom': return Math.random() < 0.5;
     case 'ifScore':  return score >= b.v;
     case 'ifFeel':   return feelings[feelOf(b.f).i] >= b.v;
@@ -2520,7 +2538,7 @@ async function exec(b) {
     }
     case 'loud':
       // микрофон ашылмаса — тоқтатқанша күтеміз (әйтпесе «Қайтала» ішінде тоқтаусыз қайталанады)
-      if (await startMic()) await waitUntil(() => micLevel !== null && micLevel >= b.v);
+      if (await startMic()) await waitUntil(() => isLoud(b.v));
       else await waitUntil(() => false);
       break;
     case 'sendMsg':
