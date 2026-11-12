@@ -773,7 +773,8 @@
   .group-title::before { content: ''; width: 10px; height: 10px; border-radius: 2px; background: var(--gc); }
   /* сөредегі блоктар кішірек — алаңға көбірек орын қалады */
   .group-blocks { display: flex; align-items: flex-end; gap: 22px; zoom: .72; }
-  #palette .block { touch-action: pan-x; transition: transform .12s ease; }
+  /* саусақпен: көлденең тартса — сөре айналады, жоғары тартса — блок алынады (JS шешеді) */
+  #palette .block { touch-action: none; transition: transform .12s ease; }
   @media (hover: hover) {
     #palette .block:hover { transform: translateY(-3px); }
   }
@@ -804,6 +805,27 @@
   @media (max-width: 900px) {
     .btn .txt { display: none; }
     .btn { padding: 0 10px; }
+  }
+  /* Телефон: құрал тақтасы 5 қатар емес, 3 қатарға сияды — алаңға көбірек орын қалады */
+  @media (max-width: 600px) {
+    .menu { gap: 6px; row-gap: 6px; padding-block: 6px; }
+    .menu .spacer { display: none; }
+    .btn { min-height: 38px; padding: 0 8px; }
+    .chip { min-height: 32px; padding: 0 8px; }
+    .menu > #projName:not(#status) { flex: 1 1 0; width: auto; min-width: 0; }
+    /* 1-қатар: үй · жоба аты · жиынтық · қосу; 2-қатар: күй · порттар · датчиктер; 3-қатар: батырмалар */
+    .menu > #status { flex: 1 1 100px; min-width: 0; }
+    #btnMic > span:not(.lvl) { display: none; }
+  }
+  /* Тар экранда сабақ терезесі алаңды жаппайды: төменгі жартысына түседі, «Бастау» блогы үстінде көрініп тұрады */
+  @media (max-width: 759px) {
+    #lessonPanel:not(.mini) {
+      top: auto; width: 100%; max-height: 58%;
+      padding: 12px max(14px, env(safe-area-inset-left, 0px));
+      border-right: none; border-top: 1px solid var(--line);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -8px 24px rgba(0,0,0,.12);
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     #status.busy .dot { animation: none; }
@@ -1474,7 +1496,6 @@ let drag = null;
 
 function onPointerDown(e, from, ref) {
   const locked = isRunning();
-  if (locked && from === 'palette') return;
   if (e.button > 0 || e.target.closest('input')) return;
   e.stopPropagation(); // жақтау ішіндегі блокты ұстағанда жақтаудың өзі ұсталмасын
   drag = { from, ref, x0: e.clientX, y0: e.clientY, active: false, el: e.currentTarget, locked };
@@ -1586,7 +1607,16 @@ function setZoom(z) {
 window.addEventListener('pointermove', e => {
   if (!drag) return;
   if (!drag.active) {
-    if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
+    const mx = e.clientX - drag.x0, my = e.clientY - drag.y0;
+    if (drag.scroll != null) { palette.scrollLeft = drag.scroll - mx; return; }
+    if (Math.hypot(mx, my) < 6) return;
+    // саусақ сөре бойымен көлденең жүрсе — блокты алмаймыз, сөрені айналдырамыз
+    // (браузерге бермейміз: ол қиғаш тартуды да «айналдыру» деп ұстап, сүйреуді үзіп тастайтын)
+    if (drag.from === 'palette' && e.pointerType !== 'mouse' && Math.abs(mx) > Math.abs(my)) {
+      drag.scroll = palette.scrollLeft + mx;
+      drag.moved = true;
+      return;
+    }
     if (drag.locked) { drag.moved = true; return; } // жүріп тұрғанда сүйремейміз
     startDrag();
   }
@@ -1628,7 +1658,7 @@ window.addEventListener('pointerup', e => {
       }
     }
     // алаңнан тыс тасталса — блоктар өшіріледі
-  } else if (!d.moved) {
+  } else if (!d.moved && !(d.locked && d.from === 'palette')) {
     onTap(d);
   }
   render();
@@ -1778,9 +1808,14 @@ function showTilt() {
   $('tiltValue').innerHTML = !tilt ? '—' : t ? icon('arrow', 'ic', `transform:rotate(${t.rot}deg);color:#fff`) : '•';
 }
 
+// iPhone/iPad-та Apple барлық браузерге Web Bluetooth-ты жапқан — iOS-тағы Chrome да қоспайды
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const noBtMsg = () => IS_IOS
+  ? 'iPad пен iPhone-да Apple Web Bluetooth-ты қолдамайды. App Store-дан тегін «Bluefy» браузерін орнатып, сайтты сонда ашыңыз. Немесе Android планшет не компьютер қолданыңыз.'
+  : 'Бұл браузер Web Bluetooth қолдамайды. Chrome немесе Edge ашыңыз.';
 async function connect() {
   if (!navigator.bluetooth) {
-    showError('Бұл браузер Web Bluetooth қолдамайды. Chrome немесе Edge ашыңыз.');
+    showError(noBtMsg());
     return;
   }
   const kind = HUB_KINDS[hubKind];
@@ -2210,8 +2245,19 @@ let micLevel = null;   // 0..10 — дауыс деңгейі
 let micBands = MIC_BANDS.map(() => 0);
 let micStarting = null;
 
+// Android-та микрофонды бір уақытта тек біреуі ұстай алады. Сөзбен басқару (Google) тыңдап тұрса,
+// дыбыс деңгейіне микрофонды ашпаймыз — әйтпесе робот сөзді естімей қалады («Мінезді робот»-тағы қате).
+let micBusyNoted = false;
+const micTakenByVoice = () => IS_ANDROID && voiceWanted && !ownOnly;
 function startMic() {
   if (mic) return Promise.resolve(true);
+  if (micTakenByVoice()) {
+    if (!micBusyNoted) {
+      micBusyNoted = true;
+      showError('Android-та микрофон бір іске ғана беріледі: қазір ол сөзді тыңдап тұр. Сондықтан «Дауыс деңгейі» блоктары бұл жолы істемейді.');
+    }
+    return Promise.resolve(false);
+  }
   if (micStarting) return micStarting;
   if (!navigator.mediaDevices?.getUserMedia) {
     showError('Бұл браузерде микрофон жоқ. Бетті Chrome-да localhost арқылы аш.');
@@ -2562,22 +2608,25 @@ const listenText = () => !voiceChains().length ? 'AI тыңдап тұр — т�
   : lastHeard ? `Тыңдап тұрмын · естігенім: «${lastHeard}»` : 'Тыңдап тұрмын — команда айт. Тоқтату үшін ■';
 
 function runAll() {
-  // «Іске қос» басылғанда микрофонды бірден қосамыз — «AI танығанда» тізбектері де тыңдай бастайды
-  if (boardNeedsMic()) startMic();
+  // «Іске қос» басылғанда микрофонды бірден қосамыз — «AI танығанда» тізбектері де тыңдай бастайды.
+  // Android-та сөзбен басқару бар болса, микрофон сөз тануға қалады (жоғарыдағы micTakenByVoice).
+  const hasVoice = voiceChains().length > 0;
+  ownOnly = hasVoice && IS_ANDROID && trainedWordModels().length > 0;
+  micBusyNoted = false;
+  if (boardNeedsMic() && !(IS_ANDROID && hasVoice && !ownOnly)) startMic();
   aiArmed = true;
   aiLive.forEach(L => { L.fired = null; });
   resetFeelings();
   resetScore();
   if (voiceChains().length) {
     // Android-та микрофонды бір уақытта тек біреу ұстай алады: дауыс деңгейі қосулы тұрса, сөз тану ештеңе естімейді
-    ownOnly = IS_ANDROID && trainedWordModels().length > 0;
     voiceLastFire.clear();
     if (ownOnly) {
       voiceWanted = true;
       showVoice();
       startMic().then(() => showVoice());
     } else {
-      if (IS_ANDROID && mic && !boardNeedsMic()) stopMic();
+      if (IS_ANDROID && mic) stopMic(); // микрофонды Google-ға босатамыз
       startVoice();
       // компьютерде екеуі бір уақытта тыңдайды: өз модель тану үшін де, Google-дан үйрену үшін де
       if (!IS_ANDROID && wordModels().length) startMic();
@@ -3612,6 +3661,25 @@ function showGuide(e) {
   $('exGuide').showModal();
   $('exGuide').querySelector('.exg-foot button:not([hidden])')?.focus();
 }
+// Мысалдар кең экранға (екі баған) жасалған. Экран тар болса (планшет, телефон), оң бағандағы
+// тізбектер көрінбей қалып, «жоғалып кеткендей» болатын. Сыймаса — тізбектерді экран еніне қайта орналастырамыз.
+function fitChains(list) {
+  const GAP = 40;
+  const avail = ((canvas.clientWidth || innerWidth) / zoom) - GAP;
+  const right = c => c.x + bodyWidth(c.blocks);
+  if (!list.length || Math.max(...list.map(right)) <= avail) return list;
+  const order = [...list].sort((a, b) => a.y - b.y || a.x - b.x);
+  let x = GAP, y = 0, rowDown = 0, first = true;
+  for (const c of order) {
+    const w = bodyWidth(c.blocks), e = listExt(c.blocks);
+    if (first) { y = Math.max(GAP, e.up + 4); first = false; }
+    else if (x + w > avail && x > GAP) { y += BH + rowDown + GAP + e.up; x = GAP; rowDown = 0; }
+    c.x = x; c.y = y;
+    x += w + GAP;
+    rowDown = Math.max(rowDown, e.down);
+  }
+  return list;
+}
 async function openExample(e) {
   try {
     const r = await fetch('projects/' + encodeURIComponent(e.file));
@@ -3624,7 +3692,7 @@ async function openExample(e) {
       renderHubKind();
     }
     $('exGuide').close();
-    const p = createProject(e.title, d.chains, validAI(d.ai) ? d.ai : defaultAI());
+    const p = createProject(e.title, fitChains(d.chains), validAI(d.ai) ? d.ai : defaultAI());
     p.example = e.id;
     persist();
     renderGuideBtn();
@@ -4021,7 +4089,7 @@ projects = loadProjects();
 persist();
 showHome(true);
 if (!navigator.bluetooth) {
-  showError('Бұл браузер Web Bluetooth қолдамайды. Chrome немесе Edge ашыңыз.');
+  showError(noBtMsg());
   $('btnConnect').disabled = true;
 }
 </script>
