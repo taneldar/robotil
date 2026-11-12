@@ -1728,6 +1728,23 @@ let distance = null;
 let tilt = null;  // { x, y } — градус
 let color = null; // түс датчигі: LEGO түс нөмірі 0–10, ештеңе көрмесе -1
 
+// ===== Диагностика: адреске ?debug қосылса, экранның төменгі жағында журнал көрінеді =====
+// Планшеттегі қателерді табу үшін: не естілді, қай тізбек іске қосылды, моторды кім тоқтатты, Bluetooth үзілді ме.
+const DBG = /[?&]debug/.test(location.search);
+const dbgT0 = Date.now(), dbgLines = [];
+let dbgEl = null;
+function dbg(msg) {
+  if (!DBG) return;
+  dbgLines.push(((Date.now() - dbgT0) / 1000).toFixed(1) + 's ' + msg);
+  if (dbgLines.length > 60) dbgLines.shift();
+  if (!dbgEl && document.body) {
+    dbgEl = document.createElement('pre');
+    dbgEl.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:9999;width:min(520px,94vw);max-height:42vh;overflow:auto;margin:0;padding:8px 10px;background:rgba(0,0,0,.85);color:#7fffa0;font:12px/1.35 monospace;border-radius:8px;white-space:pre-wrap';
+    document.body.appendChild(dbgEl);
+  }
+  if (dbgEl) { dbgEl.textContent = dbgLines.join('\n'); dbgEl.scrollTop = dbgEl.scrollHeight; }
+}
+const chainName = c => { const h = c.blocks[0]; return h.type + (h.v !== undefined && h.v !== '' ? ':' + String(h.v).split('/')[0] : ''); };
 const isConnected = () => hubs.some(h => h.connected());
 const DEVICE_NAMES = { motor: 'мотор', tilt: 'еңіс', distance: 'қашықтық', color: 'түс', matrix: 'матрица' };
 const LEGO_COLOR_NAMES = ['қара', 'қызғылт', 'күлгін', 'көк', 'көгілдір', 'көкшіл', 'жасыл', 'сары', 'сарғыш', 'қызыл', 'ақ'];
@@ -1744,7 +1761,7 @@ let writeQueue = Promise.resolve();
 function write(char, bytes) {
   writeQueue = writeQueue
     .then(() => char.writeValue(new Uint8Array(bytes)))
-    .catch(e => showError('Команда жіберілмеді: ' + e.message));
+    .catch(e => { dbg('!!! жазу қатесі: ' + e.message); showError('Команда жіберілмеді: ' + e.message); });
   return writeQueue;
 }
 
@@ -1854,6 +1871,7 @@ function forgetHub(hub) {
 }
 
 function onDisconnected(hub) {
+  dbg('!!! BLUETOOTH ҮЗІЛДІ');
   forgetHub(hub);
   setStatus('Хаб ажыратылды', '');
 }
@@ -2034,6 +2052,7 @@ const DRIVE = { fwd: [-1, 1], back: [1, -1], left: [1, 1], right: [-1, -1] };
 const motorDirFor = i => motorDir === 0 ? 0 : drive ? DRIVE[drive][i] ?? 0 : motorDir;
 
 function applyMotor() {
+  dbg(`  мотор=${motorDir} қуат=${motorPct}${isConnected() ? '' : ' (хаб жоқ)'}`);
   if (!isConnected()) return;
   const withMotor = hubs.filter(h => h.motorPorts().length);
   if (withMotor.length === 0 && motorDir !== 0) showError('Мотор табылмады. Моторды хабқа жалға.');
@@ -2501,7 +2520,9 @@ function waitUntil(cond) {
   });
 }
 
+const DBG_BLOCKS = new Set(['fwd', 'back', 'stop', 'runFor', 'driveFwd', 'driveBack', 'turnLeft', 'turnRight', 'mood', 'display', 'feelAdd']);
 async function exec(b) {
+  if (DBG && DBG_BLOCKS.has(b.type)) dbg('  блок ' + b.type + (b.v !== undefined ? ' ' + b.v : ''));
   switch (b.type) {
     case 'fwd':    drive = null; motorDir = 1; applyMotor(); break;
     case 'back':   drive = null; motorDir = -1; applyMotor(); break;
@@ -2537,6 +2558,7 @@ async function exec(b) {
       break;
     }
     case 'loud':
+      dbg('  «Дауыс деңгейі ' + b.v + '» күтіп тұр');
       // микрофон ашылмаса — тоқтатқанша күтеміз (әйтпесе «Қайтала» ішінде тоқтаусыз қайталанады)
       if (await startMic()) await waitUntil(() => isLoud(b.v));
       else await waitUntil(() => false);
@@ -2597,9 +2619,11 @@ function startChains(list) {
   if (list.some(c => ACTIVE_HATS.includes(c.blocks[0].type))) markActive();
   list.forEach(async ch => {
     runningChains.add(ch);
+    dbg('▶ ' + chainName(ch));
     try {
       await execList(ch.blocks, 1);
     } finally {
+      dbg('■ ' + chainName(ch));
       runningChains.delete(ch);
       if (voicePending.delete(ch) && aiArmed && !stopReq) return void startChains([ch]);
       if (!isRunning()) finishRun();
@@ -2609,6 +2633,7 @@ function startChains(list) {
 }
 
 function finishRun() {
+  dbg(`finishRun stopReq=${stopReq} aiArmed=${aiArmed} aiHats=${hasAiHats()}`);
   blockEls.forEach(el => el.classList.remove('running'));
   $('btnRun').disabled = false;
   // AI/сөз тыңдап тұрғанда мотор айналып тұра береді: «алға» деп айтып, кейін «тоқта» деуге болады
@@ -2638,6 +2663,7 @@ const listenText = () => !voiceChains().length ? 'AI тыңдап тұр — т�
   : lastHeard ? `Тыңдап тұрмын · естігенім: «${lastHeard}»` : 'Тыңдап тұрмын — команда айт. Тоқтату үшін ■';
 
 function runAll() {
+  dbg(`runAll android=${IS_ANDROID} үйретілген=${trainedWordModels().length} хаб=${isConnected()}`);
   // «Іске қос» басылғанда микрофонды бірден қосамыз — «AI танығанда» тізбектері де тыңдай бастайды.
   // Android-та сөзбен басқару бар болса, микрофон сөз тануға қалады (жоғарыдағы micTakenByVoice).
   const hasVoice = voiceChains().length > 0;
@@ -2672,6 +2698,7 @@ function runAll() {
 }
 
 function stopAll() {
+  dbg('stopAll ← ' + (new Error().stack.split(String.fromCharCode(10))[2] || '').trim().slice(0, 60));
   aiArmed = false;
   stopVoice();
   stopReq = true;
@@ -2754,6 +2781,7 @@ function startVoice() {
       const alts = Array.from(e.results[i], a => foldWord(a.transcript)).filter(Boolean);
       if (!alts.length) continue;
       lastHeard = e.results[i][0].transcript.trim();
+      dbg(`google: «${lastHeard}»${e.results[i].isFinal ? ' (соңғы)' : ''}${hearingSelf() ? ' [өз дыбысы, елемейміз]' : ''}`);
       if (!isRunning()) setStatus(listenText(), 'ok');
       if (!aiArmed) { showVoice(); continue; }
       if (hearingSelf()) continue; // роботтың өз дыбысын команда деп қабылдамаймыз
@@ -2775,6 +2803,7 @@ function startVoice() {
     }
   };
   voice.onerror = e => {
+    dbg('google қате: ' + e.error);
     // интернет жоқ сияқты қателерде секунд сайын ғана қайталаймыз, әйтпесе қате тоқтаусыз айнала береді
     voiceBackoff = e.error === 'no-speech' || e.error === 'aborted' ? 0 : 1000;
     if (e.error === 'language-not-supported' && voiceLang !== 'ru-RU') { voiceLang = 'ru-RU'; return; }
@@ -2875,10 +2904,11 @@ function fireVoice(list, src, heard) {
 function onWordHeard(s) {
   const now = Date.now();
   // сөз бағдарламаның өз дыбысымен қатар естілді — бұл баланың сөзі емес, елемейміз (әрі одан үйренбейміз)
-  if (hearingSelf(now - s.length * wordHopMs - 300)) { learnWait = null; return; }
+  if (hearingSelf(now - s.length * wordHopMs - 300)) { dbg('өз модель: [өз дыбысы, елемейміз]'); learnWait = null; return; }
   let known = null;
   for (const m of trainedWordModels()) {
     const r = classifyWord(wordClasses(m), s);
+    dbg(`өз модель: ${r.name ?? '— (танымады)'} d=${r.d?.toFixed?.(1) ?? '?'} ұзындығы=${Math.round(s.length * wordHopMs)}мс`);
     const L = liveOf(m);
     L.now = L.stable = r.name;
     L.conf = r.name ? Math.max(0.3, Math.min(1, 1.2 - r.d / WORD_SURE_D)) : 0;
