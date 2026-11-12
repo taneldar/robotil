@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Oylab — AI-робототехника студиясы</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="LEGO WeDo 2.0 роботтарына арналған қазақ тіліндегі блоктық бағдарламалау және AI студиясы. Браузерде, интернетсіз AI.">
 <!-- LEGO, WeDo және SPIKE — LEGO Group компаниясының сауда белгілері. Oylab — LEGO Group-пен байланысы жоқ тәуелсіз жоба. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2217,12 +2220,21 @@ const MOODS = [
 ];
 const moodOf = v => MOODS[v] ?? MOODS[0];
 // дыбыс ұзақтығын (секунд) қайтарады
+// Бағдарлама өзі дыбыс ойнап тұрғанда микрофон оны «сөз» деп естімесін. Планшетте динамик микрофонға
+// өте жақын: «алға» → көңіл-күй дыбысы → өз модель бұл дыбысты «тоқта» деп танып, роботты тоқтататын.
+let selfSoundUntil = 0;
+const SELF_SOUND_TAIL_MS = 400;
+function markSelfSound(sec) {
+  if (sec > 0) selfSoundUntil = Math.max(selfSoundUntil, Date.now() + sec * 1000 + SELF_SOUND_TAIL_MS);
+  return sec;
+}
+const hearingSelf = (since = Date.now()) => since < selfSoundUntil;
 function playMood(n) {
   try {
     audioCtx ??= new AudioContext();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const t = audioCtx.currentTime + 0.02;
-    return moodOf(n).play(t, rr(0.9, 1.12)) - t;
+    return markSelfSound(moodOf(n).play(t, rr(0.9, 1.12)) - t);
   } catch (e) {
     return 0;
   }
@@ -2231,7 +2243,7 @@ function playSound(n) {
   try {
     audioCtx ??= new AudioContext();
     if (audioCtx.state === 'suspended') audioCtx.resume();
-    return SOUNDS[n - 1](audioCtx.currentTime + 0.02);
+    return markSelfSound(SOUNDS[n - 1](audioCtx.currentTime + 0.02));
   } catch (e) {
     return 0;
   }
@@ -2726,6 +2738,7 @@ function startVoice() {
       lastHeard = e.results[i][0].transcript.trim();
       if (!isRunning()) setStatus(listenText(), 'ok');
       if (!aiArmed) { showVoice(); continue; }
+      if (hearingSelf()) continue; // роботтың өз дыбысын команда деп қабылдамаймыз
       const fired = voiceFired.get(i) ?? new Map();
       voiceFired.set(i, fired);
       let shown = null;
@@ -2843,6 +2856,8 @@ function fireVoice(list, src, heard) {
 // Өз модель бір сөзді естіп болды (сөзден кейін 0,3 с үнсіздік)
 function onWordHeard(s) {
   const now = Date.now();
+  // сөз бағдарламаның өз дыбысымен қатар естілді — бұл баланың сөзі емес, елемейміз (әрі одан үйренбейміз)
+  if (hearingSelf(now - s.length * wordHopMs - 300)) { learnWait = null; return; }
   let known = null;
   for (const m of trainedWordModels()) {
     const r = classifyWord(wordClasses(m), s);
