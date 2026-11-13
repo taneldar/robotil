@@ -566,58 +566,6 @@
    ]
   },
   {
-   "x": 40,
-   "y": 1840,
-   "blocks": [
-    {
-     "type": "start"
-    },
-    {
-     "type": "repeat",
-     "v": 0,
-     "body": [
-      {
-       "type": "loud",
-       "v": 9
-      },
-      {
-       "type": "stop"
-      },
-      {
-       "type": "light",
-       "v": 2
-      },
-      {
-       "type": "display",
-       "v": "Қорқамын!"
-      },
-      {
-       "type": "mood",
-       "v": 9
-      },
-      {
-       "type": "back"
-      },
-      {
-       "type": "wait",
-       "v": 1
-      },
-      {
-       "type": "stop"
-      },
-      {
-       "type": "wait",
-       "v": 1
-      },
-      {
-       "type": "light",
-       "v": 3
-      }
-     ]
-    }
-   ]
-  },
-  {
    "x": 1400,
    "y": 1840,
    "blocks": [
